@@ -39,17 +39,22 @@ Preferred communication style: Simple, everyday language.
 
 **Key Pages:**
 - Home: Marketing landing page with service showcase and Good Day Services branding
-- Book: Multi-step booking flow with Google Maps property measurement (service selection → quote generation with map/manual entry → customer details → scheduling)
-- Customer Dashboard: Appointment lookup and management by email
-- Admin Dashboard: Service management and booking oversight
+- Book: Multi-step booking flow with address-first auto-measurement (service selection → property address → auto-measurement → scheduling → customer details)
+- Customer Dashboard: Appointment lookup and management by email with Google Review generator for completed services
+- Admin Dashboard: Service management, booking oversight, and Google Review link sharing
 
 **Key Features:**
 - **Logo Integration**: Custom Good Day Services logo displayed in header and favicon
-- **Google Maps Property Measurement**: Interactive map tool allowing customers to draw property boundaries for automatic square footage calculation
-  - Address search and geocoding
+- **Address-First Auto-Measurement**: Streamlined quote process collecting property address before measurement
+  - Quick estimate buttons for typical property sizes (1,000 / 2,000 / 3,500 / 5,000 sq ft)
+  - Address-based auto-geocoding to center map on customer's property
   - Polygon drawing tool with real-time area calculation
   - Converts square meters to square feet automatically
-  - Alternative manual entry option via tabbed interface
+  - Flexible measurement options: quick estimates, map drawing, or manual entry
+- **Google Business Review Generator**: QR code and link generator to collect customer reviews
+  - Displayed in customer dashboard after service completion
+  - Available in admin dashboard for easy sharing with customers
+  - Uses VITE_GOOGLE_PLACE_ID environment variable
 - **Stripe Payment Integration** (configured, awaiting API keys): Ready for secure payment processing when booking appointments
 
 ### Backend Architecture
