@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader } from "@googlemaps/js-api-loader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Ruler, Trash2, MapPin } from "lucide-react";
@@ -20,30 +19,37 @@ export function PropertyMeasurement({ onAreaCalculated, initialAddress = "" }: P
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loader = new Loader({
-      apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-      version: "weekly",
-      libraries: ["drawing", "geometry", "places"],
-    });
+    const initMap = async () => {
+      // Load Google Maps script dynamically
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=drawing,geometry,places&v=weekly`;
+      script.async = true;
+      script.defer = true;
+      
+      script.onload = () => {
+        if (mapRef.current && (window as any).google) {
+          const google = (window as any).google;
+          const mapInstance = new google.maps.Map(mapRef.current, {
+            center: { lat: 40.7128, lng: -74.0060 }, // Default to NYC
+            zoom: 18,
+            mapTypeId: "satellite",
+            tilt: 0,
+          });
 
-    loader.load().then((google) => {
-      if (mapRef.current) {
-        const mapInstance = new google.maps.Map(mapRef.current, {
-          center: { lat: 40.7128, lng: -74.0060 }, // Default to NYC
-          zoom: 18,
-          mapTypeId: "satellite",
-          tilt: 0,
-        });
+          setMap(mapInstance);
+          setIsLoading(false);
 
-        setMap(mapInstance);
-        setIsLoading(false);
-
-        // If initial address provided, geocode it
-        if (initialAddress) {
-          geocodeAddress(initialAddress, mapInstance);
+          // If initial address provided, geocode it
+          if (initialAddress) {
+            geocodeAddress(initialAddress, mapInstance);
+          }
         }
-      }
-    });
+      };
+
+      document.head.appendChild(script);
+    };
+
+    initMap();
   }, []);
 
   const geocodeAddress = (addr: string, mapInstance?: any) => {

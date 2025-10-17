@@ -38,10 +38,19 @@ Preferred communication style: Simple, everyday language.
 - @hookform/resolvers for seamless integration
 
 **Key Pages:**
-- Home: Marketing landing page with service showcase
-- Book: Multi-step booking flow (service selection → quote generation → customer details → scheduling)
+- Home: Marketing landing page with service showcase and Good Day Services branding
+- Book: Multi-step booking flow with Google Maps property measurement (service selection → quote generation with map/manual entry → customer details → scheduling)
 - Customer Dashboard: Appointment lookup and management by email
 - Admin Dashboard: Service management and booking oversight
+
+**Key Features:**
+- **Logo Integration**: Custom Good Day Services logo displayed in header and favicon
+- **Google Maps Property Measurement**: Interactive map tool allowing customers to draw property boundaries for automatic square footage calculation
+  - Address search and geocoding
+  - Polygon drawing tool with real-time area calculation
+  - Converts square meters to square feet automatically
+  - Alternative manual entry option via tabbed interface
+- **Stripe Payment Integration** (configured, awaiting API keys): Ready for secure payment processing when booking appointments
 
 ### Backend Architecture
 
@@ -146,3 +155,40 @@ Preferred communication style: Simple, everyday language.
 **Utilities:**
 - date-fns - Date manipulation and formatting
 - nanoid - Unique ID generation
+
+**External API Integrations:**
+- Google Maps JavaScript API - For property measurement and geocoding features
+  - Requires VITE_GOOGLE_MAPS_API_KEY environment variable
+  - Must enable Maps JavaScript API, Drawing Library, Geometry Library, and Places API in Google Cloud Console
+- Stripe Payment Processing (ready for integration)
+  - Requires VITE_STRIPE_PUBLIC_KEY and STRIPE_SECRET_KEY environment variables
+  - Blueprint configured for one-time payment processing on booking confirmation
+
+## Deployment Notes
+
+**Environment Variables Required:**
+- `DATABASE_URL` - PostgreSQL connection string (configured via Replit)
+- `VITE_GOOGLE_MAPS_API_KEY` - Google Maps API key (configured)
+- `STRIPE_SECRET_KEY` - Stripe secret key (awaiting configuration)
+- `VITE_STRIPE_PUBLIC_KEY` - Stripe publishable key (awaiting configuration)
+- `SESSION_SECRET` - Express session secret (configured via Replit)
+
+**Google Maps API Setup:**
+1. Create project at https://console.cloud.google.com
+2. Enable APIs: Maps JavaScript API, Geocoding API, Places API
+3. Create API key and add to Replit Secrets as VITE_GOOGLE_MAPS_API_KEY
+4. Restrict key to your domain in production
+
+**Stripe Setup (when ready):**
+1. Create account at https://stripe.com
+2. Get API keys from https://dashboard.stripe.com/apikeys
+3. Add STRIPE_SECRET_KEY and VITE_STRIPE_PUBLIC_KEY to Replit Secrets
+
+**Production Checklist:**
+- [ ] Verify all environment variables are set
+- [ ] Enable Google Maps APIs in Cloud Console
+- [ ] Configure Stripe webhook endpoints (if using subscriptions)
+- [ ] Test complete booking flow end-to-end
+- [ ] Verify payment processing (when Stripe is activated)
+- [ ] Set up custom domain (optional)
+- [ ] Enable HTTPS (automatic with Replit deployment)
