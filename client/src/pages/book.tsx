@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PropertyMeasurement } from "@/components/property-measurement";
 import { 
   Form,
   FormControl,
@@ -236,21 +238,38 @@ export default function Book() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div>
-                  <Label htmlFor="squareFootage">Square Footage</Label>
-                  <Input
-                    id="squareFootage"
-                    type="number"
-                    placeholder="Enter area in square feet"
-                    {...form.register("squareFootage", { valueAsNumber: true })}
-                    data-testid="input-square-footage"
-                  />
-                  {form.formState.errors.squareFootage && (
-                    <p className="text-sm text-destructive mt-1">
-                      {form.formState.errors.squareFootage.message}
-                    </p>
-                  )}
-                </div>
+                <Tabs defaultValue="manual" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="manual" data-testid="tab-manual-entry">Manual Entry</TabsTrigger>
+                    <TabsTrigger value="map" data-testid="tab-map-measurement">Map Measurement</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="manual" className="space-y-4">
+                    <div>
+                      <Label htmlFor="squareFootage">Square Footage</Label>
+                      <Input
+                        id="squareFootage"
+                        type="number"
+                        placeholder="Enter area in square feet"
+                        {...form.register("squareFootage", { valueAsNumber: true })}
+                        data-testid="input-square-footage"
+                      />
+                      {form.formState.errors.squareFootage && (
+                        <p className="text-sm text-destructive mt-1">
+                          {form.formState.errors.squareFootage.message}
+                        </p>
+                      )}
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="map" className="space-y-4">
+                    <PropertyMeasurement 
+                      onAreaCalculated={(area) => {
+                        form.setValue("squareFootage", area);
+                      }}
+                    />
+                  </TabsContent>
+                </Tabs>
 
                 <Button 
                   onClick={handleCalculateQuote}
