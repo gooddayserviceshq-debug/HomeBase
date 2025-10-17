@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Ruler, Trash2, MapPin } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Ruler, Trash2, MapPin, Zap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -9,6 +10,13 @@ interface PropertyMeasurementProps {
   onAreaCalculated: (squareFootage: number) => void;
   initialAddress?: string;
 }
+
+const QUICK_ESTIMATES = [
+  { label: "Small (1,000 sq ft)", value: 1000 },
+  { label: "Medium (2,000 sq ft)", value: 2000 },
+  { label: "Large (3,500 sq ft)", value: 3500 },
+  { label: "Extra Large (5,000 sq ft)", value: 5000 },
+];
 
 export function PropertyMeasurement({ onAreaCalculated, initialAddress = "" }: PropertyMeasurementProps) {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -147,6 +155,11 @@ export function PropertyMeasurement({ onAreaCalculated, initialAddress = "" }: P
     }
   };
 
+  const handleQuickEstimate = (squareFootage: number) => {
+    setArea(squareFootage);
+    onAreaCalculated(squareFootage);
+  };
+
   return (
     <Card className="p-4 space-y-4">
       <div className="space-y-2">
@@ -171,6 +184,31 @@ export function PropertyMeasurement({ onAreaCalculated, initialAddress = "" }: P
             <MapPin className="h-4 w-4" />
           </Button>
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Zap className="h-4 w-4 text-primary" />
+          <Label className="text-sm font-semibold">Quick Estimates</Label>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {QUICK_ESTIMATES.map((estimate) => (
+            <Button
+              key={estimate.value}
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickEstimate(estimate.value)}
+              data-testid={`button-quick-estimate-${estimate.value}`}
+              className="justify-start"
+            >
+              {estimate.label}
+            </Button>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Choose a typical size or draw your exact area on the map below
+        </p>
       </div>
 
       <div

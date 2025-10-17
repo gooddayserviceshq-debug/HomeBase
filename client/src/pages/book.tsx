@@ -28,7 +28,8 @@ import {
   CheckCircle2,
   ArrowRight,
   ArrowLeft,
-  Calculator
+  Calculator,
+  MapPin
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
