@@ -1,8 +1,9 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
-import { Menu, X, Droplet } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useState } from "react";
+import logoUrl from "@assets/transparent GDS social avatar logo color (1)_1760659313459.png";
 
 export function Header() {
   const [location] = useLocation();
@@ -20,7 +21,7 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         <div className="flex h-16 items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2 hover-elevate rounded-lg px-2 py-1 -ml-2">
-            <Droplet className="h-6 w-6 text-primary" />
+            <img src={logoUrl} alt="Good Day Services Logo" className="h-8 w-8" />
             <span className="font-bold text-lg">Good Day Services</span>
           </Link>
 
