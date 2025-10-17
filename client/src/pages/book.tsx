@@ -126,13 +126,14 @@ export default function Book() {
   };
 
   const handleAddressConfirm = () => {
-    if (propertyAddress.trim() && isAddressValid) {
+    // Allow addresses that are either validated OR have sufficient length for manual entry
+    if (propertyAddress.trim() && (isAddressValid || propertyAddress.length > 10)) {
       setAddressConfirmed(true);
       form.setValue("address", propertyAddress);
     } else {
       toast({
         title: "Invalid Address",
-        description: "Please select a valid address from the autocomplete suggestions.",
+        description: "Please enter a complete address to continue.",
         variant: "destructive",
       });
     }
@@ -271,15 +272,20 @@ export default function Book() {
                   />
                   <Button 
                     onClick={handleAddressConfirm}
-                    disabled={!propertyAddress.trim() || !isAddressValid}
+                    disabled={!propertyAddress.trim()}
                     className="w-full"
                     data-testid="button-confirm-address"
                   >
                     Continue to Measurement <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
-                  {propertyAddress && !isAddressValid && (
+                  {propertyAddress && !isAddressValid && propertyAddress.length > 10 && (
                     <p className="text-sm text-muted-foreground">
-                      Please select your address from the dropdown suggestions to continue
+                      Address entered manually. Click Continue to proceed.
+                    </p>
+                  )}
+                  {propertyAddress && !isAddressValid && propertyAddress.length <= 10 && (
+                    <p className="text-sm text-muted-foreground">
+                      Please enter a complete address to continue
                     </p>
                   )}
                 </CardContent>

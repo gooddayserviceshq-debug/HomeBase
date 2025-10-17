@@ -21,60 +21,31 @@ export function AddressAutocomplete({
   const autocompleteRef = useRef<any>(null);
   const [address, setAddress] = useState("");
   const [isValid, setIsValid] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [autocompleteAvailable, setAutocompleteAvailable] = useState(false);
 
   useEffect(() => {
-    const initAutocomplete = () => {
-      if (!inputRef.current || !(window as any).google) {
-        setTimeout(initAutocomplete, 100);
-        return;
-      }
-
-      const google = (window as any).google;
-      
-      autocompleteRef.current = new google.maps.places.Autocomplete(inputRef.current, {
-        types: ["address"],
-        componentRestrictions: { country: "us" },
-        fields: ["formatted_address", "address_components", "geometry"],
-      });
-
-      autocompleteRef.current.addListener("place_changed", () => {
-        const place = autocompleteRef.current.getPlace();
-        
-        if (place.formatted_address && place.geometry) {
-          setAddress(place.formatted_address);
-          setIsValid(true);
-          onAddressSelected(place.formatted_address, true);
-        } else {
-          setIsValid(false);
-          onAddressSelected(address, false);
-        }
-      });
-
-      setIsLoading(false);
-    };
-
-    // Load Google Maps script if not already loaded
-    if (!(window as any).google) {
-      const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places&v=weekly`;
-      script.async = true;
-      script.defer = true;
-      script.onload = initAutocomplete;
-      document.head.appendChild(script);
-    } else {
-      initAutocomplete();
-    }
+    // Temporarily disabled autocomplete - using manual input only
+    // This ensures the input is never programmatically disabled by Google Maps
+    console.log("Address autocomplete component mounted - manual input mode");
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setAddress(value);
     
-    // Reset validation when user types
-    if (isValid) {
-      setIsValid(false);
-      onAddressSelected(value, false);
+    // Validate based on trimmed length for manual entry
+    const trimmedValue = value.trim();
+    const isValidInput = trimmedValue.length > 10;
+    
+    if (!autocompleteAvailable) {
+      // Manual entry mode - validate on trimmed length
+      if (isValidInput) {
+        setIsValid(true);
+        onAddressSelected(trimmedValue, true);
+      } else {
+        setIsValid(false);
+        onAddressSelected(trimmedValue, false);
+      }
     }
   };
 
@@ -92,7 +63,6 @@ export function AddressAutocomplete({
           placeholder={placeholder}
           value={address}
           onChange={handleInputChange}
-          disabled={isLoading}
           data-testid="input-address-autocomplete"
           className={isValid ? "border-chart-2" : ""}
         />
@@ -101,21 +71,23 @@ export function AddressAutocomplete({
             {isValid ? (
               <Badge variant="outline" className="bg-chart-2/10 text-chart-2 border-chart-2">
                 <CheckCircle2 className="h-3 w-3 mr-1" />
-                Verified
+                {autocompleteAvailable ? "Verified" : "Ready"}
               </Badge>
-            ) : (
+            ) : autocompleteAvailable ? (
               <Badge variant="outline" className="bg-muted text-muted-foreground">
                 <AlertCircle className="h-3 w-3 mr-1" />
                 Select from dropdown
               </Badge>
-            )}
+            ) : null}
           </div>
         )}
       </div>
-      {isLoading && (
-        <p className="text-xs text-muted-foreground">Loading address search...</p>
+      {!autocompleteAvailable && !address && (
+        <p className="text-xs text-muted-foreground">
+          Enter your complete property address
+        </p>
       )}
-      {!isLoading && !isValid && address && (
+      {autocompleteAvailable && !isValid && address && (
         <p className="text-xs text-muted-foreground">
           Please select an address from the dropdown suggestions
         </p>
