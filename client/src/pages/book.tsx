@@ -73,8 +73,8 @@ export default function Book() {
 
   const getQuoteMutation = useMutation({
     mutationFn: async (data: { serviceId: string; squareFootage: number }) => {
-      const response = await apiRequest<QuoteResponse>("POST", "/api/quotes", data);
-      return response;
+      const response = await apiRequest("POST", "/api/quotes", data);
+      return await response.json() as QuoteResponse;
     },
     onSuccess: (data) => {
       setQuote(data);
@@ -83,8 +83,8 @@ export default function Book() {
 
   const createBookingMutation = useMutation({
     mutationFn: async (data: { customer: InsertCustomer; booking: Omit<InsertBooking, 'customerId'> }) => {
-      const response = await apiRequest<{ bookingId: string }>("POST", "/api/bookings", data);
-      return response;
+      const response = await apiRequest("POST", "/api/bookings", data);
+      return await response.json() as { bookingId: string };
     },
     onSuccess: () => {
       toast({
@@ -261,20 +261,20 @@ export default function Book() {
                   Calculate Quote
                 </Button>
 
-                {quote && (
+                {quote && quote.basePrice !== undefined && (
                   <div className="bg-primary/5 rounded-lg p-6 space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Base Price:</span>
-                      <span className="font-semibold">${quote.basePrice.toFixed(2)}</span>
+                      <span className="font-semibold">${Number(quote.basePrice).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Area Charge ({squareFootage} sq ft):</span>
-                      <span className="font-semibold">${quote.areaPrice.toFixed(2)}</span>
+                      <span className="font-semibold">${Number(quote.areaPrice).toFixed(2)}</span>
                     </div>
                     <div className="border-t pt-3 flex justify-between items-center">
                       <span className="text-lg font-semibold">Total Price:</span>
                       <span className="text-2xl font-bold text-primary" data-testid="text-total-price">
-                        ${quote.totalPrice.toFixed(2)}
+                        ${Number(quote.totalPrice).toFixed(2)}
                       </span>
                     </div>
                     <Button 
@@ -451,7 +451,7 @@ export default function Book() {
                       )}
                     />
 
-                    {quote && selectedDate && selectedTime && (
+                    {quote && quote.totalPrice !== undefined && selectedDate && selectedTime && (
                       <div className="bg-muted rounded-lg p-4 space-y-2">
                         <h4 className="font-semibold">Booking Summary</h4>
                         <p className="text-sm text-muted-foreground">
@@ -464,7 +464,7 @@ export default function Book() {
                           Area: {squareFootage} sq ft
                         </p>
                         <p className="text-lg font-bold text-primary">
-                          Total: ${quote.totalPrice.toFixed(2)}
+                          Total: ${Number(quote.totalPrice).toFixed(2)}
                         </p>
                       </div>
                     )}
