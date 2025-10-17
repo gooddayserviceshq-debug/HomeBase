@@ -54,6 +54,8 @@ export default function Book() {
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedTime, setSelectedTime] = useState<string>("");
+  const [propertyAddress, setPropertyAddress] = useState("");
+  const [addressConfirmed, setAddressConfirmed] = useState(false);
 
   const { data: services = [] } = useQuery<Service[]>({
     queryKey: ["/api/services"],
@@ -109,7 +111,16 @@ export default function Book() {
     setSelectedService(service);
     setQuote(null);
     form.setValue("squareFootage", 0);
+    setPropertyAddress("");
+    setAddressConfirmed(false);
     setStep(2);
+  };
+
+  const handleAddressConfirm = () => {
+    if (propertyAddress.trim()) {
+      setAddressConfirmed(true);
+      form.setValue("address", propertyAddress);
+    }
   };
 
   const handleCalculateQuote = () => {
@@ -227,86 +238,138 @@ export default function Book() {
               <ArrowLeft className="h-4 w-4 mr-2" /> Back to Services
             </Button>
             
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calculator className="h-6 w-6" />
-                  Calculate Your Quote
-                </CardTitle>
-                <CardDescription>
-                  Get an instant price estimate for {selectedService.name}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <Tabs defaultValue="manual" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="manual" data-testid="tab-manual-entry">Manual Entry</TabsTrigger>
-                    <TabsTrigger value="map" data-testid="tab-map-measurement">Map Measurement</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="manual" className="space-y-4">
-                    <div>
-                      <Label htmlFor="squareFootage">Square Footage</Label>
-                      <Input
-                        id="squareFootage"
-                        type="number"
-                        placeholder="Enter area in square feet"
-                        {...form.register("squareFootage", { valueAsNumber: true })}
-                        data-testid="input-square-footage"
-                      />
-                      {form.formState.errors.squareFootage && (
-                        <p className="text-sm text-destructive mt-1">
-                          {form.formState.errors.squareFootage.message}
-                        </p>
-                      )}
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="map" className="space-y-4">
-                    <PropertyMeasurement 
-                      onAreaCalculated={(area) => {
-                        form.setValue("squareFootage", area);
-                      }}
+            {!addressConfirmed ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-6 w-6" />
+                    Property Address
+                  </CardTitle>
+                  <CardDescription>
+                    Enter your property address for accurate measurement
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="propertyAddress">Street Address</Label>
+                    <Input
+                      id="propertyAddress"
+                      type="text"
+                      placeholder="123 Main St, City, State ZIP"
+                      value={propertyAddress}
+                      onChange={(e) => setPropertyAddress(e.target.value)}
+                      data-testid="input-property-address"
                     />
-                  </TabsContent>
-                </Tabs>
-
-                <Button 
-                  onClick={handleCalculateQuote}
-                  disabled={!squareFootage || squareFootage <= 0}
-                  className="w-full"
-                  data-testid="button-calculate-quote"
-                >
-                  Calculate Quote
-                </Button>
-
-                {quote && quote.basePrice !== undefined && (
-                  <div className="bg-primary/5 rounded-lg p-6 space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Base Price:</span>
-                      <span className="font-semibold">${Number(quote.basePrice).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Area Charge ({squareFootage} sq ft):</span>
-                      <span className="font-semibold">${Number(quote.areaPrice).toFixed(2)}</span>
-                    </div>
-                    <div className="border-t pt-3 flex justify-between items-center">
-                      <span className="text-lg font-semibold">Total Price:</span>
-                      <span className="text-2xl font-bold text-primary" data-testid="text-total-price">
-                        ${Number(quote.totalPrice).toFixed(2)}
-                      </span>
+                  </div>
+                  <Button 
+                    onClick={handleAddressConfirm}
+                    disabled={!propertyAddress.trim()}
+                    className="w-full"
+                    data-testid="button-confirm-address"
+                  >
+                    Continue to Measurement <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Calculator className="h-6 w-6" />
+                        Calculate Your Quote
+                      </CardTitle>
+                      <CardDescription>
+                        Get an instant price estimate for {selectedService.name}
+                      </CardDescription>
                     </div>
                     <Button 
-                      onClick={handleContinueToSchedule}
-                      className="w-full mt-4"
-                      data-testid="button-continue-schedule"
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setAddressConfirmed(false)}
+                      data-testid="button-change-address"
                     >
-                      Continue to Schedule <ArrowRight className="ml-2 h-4 w-4" />
+                      Change Address
                     </Button>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                  <p className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    {propertyAddress}
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <Tabs defaultValue="map" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="map" data-testid="tab-map-measurement">Map Measurement</TabsTrigger>
+                      <TabsTrigger value="manual" data-testid="tab-manual-entry">Manual Entry</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="map" className="space-y-4">
+                      <PropertyMeasurement 
+                        onAreaCalculated={(area) => {
+                          form.setValue("squareFootage", area);
+                        }}
+                        initialAddress={propertyAddress}
+                      />
+                    </TabsContent>
+                    
+                    <TabsContent value="manual" className="space-y-4">
+                      <div>
+                        <Label htmlFor="squareFootage">Square Footage</Label>
+                        <Input
+                          id="squareFootage"
+                          type="number"
+                          placeholder="Enter area in square feet"
+                          {...form.register("squareFootage", { valueAsNumber: true })}
+                          data-testid="input-square-footage"
+                        />
+                        {form.formState.errors.squareFootage && (
+                          <p className="text-sm text-destructive mt-1">
+                            {form.formState.errors.squareFootage.message}
+                          </p>
+                        )}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+
+                  <Button 
+                    onClick={handleCalculateQuote}
+                    disabled={!squareFootage || squareFootage <= 0}
+                    className="w-full"
+                    data-testid="button-calculate-quote"
+                  >
+                    Calculate Quote
+                  </Button>
+
+                  {quote && quote.basePrice !== undefined && (
+                    <div className="bg-primary/5 rounded-lg p-6 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Base Price:</span>
+                        <span className="font-semibold">${Number(quote.basePrice).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Area Charge ({squareFootage} sq ft):</span>
+                        <span className="font-semibold">${Number(quote.areaPrice).toFixed(2)}</span>
+                      </div>
+                      <div className="border-t pt-3 flex justify-between items-center">
+                        <span className="text-lg font-semibold">Total Price:</span>
+                        <span className="text-2xl font-bold text-primary" data-testid="text-total-price">
+                          ${Number(quote.totalPrice).toFixed(2)}
+                        </span>
+                      </div>
+                      <Button 
+                        onClick={handleContinueToSchedule}
+                        className="w-full mt-4"
+                        data-testid="button-continue-schedule"
+                      >
+                        Continue to Schedule <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 
