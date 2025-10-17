@@ -45,6 +45,12 @@ Preferred communication style: Simple, everyday language.
 
 **Key Features:**
 - **Logo Integration**: Custom Good Day Services logo displayed in header and favicon
+- **Address Verification System**: Google Places Autocomplete ensures customers enter accurate, valid addresses
+  - Real-time address suggestions as user types
+  - US-only address validation with autocomplete dropdown
+  - Visual verification badges (checkmark for verified addresses)
+  - Cannot proceed without selecting valid address from suggestions
+  - Prevents booking errors from incorrect addresses
 - **Address-First Auto-Measurement**: Streamlined quote process collecting property address before measurement
   - Quick estimate buttons for typical property sizes (1,000 / 2,000 / 3,500 / 5,000 sq ft)
   - Address-based auto-geocoding to center map on customer's property
