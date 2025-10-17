@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { GoogleReviewGenerator } from "@/components/google-review-generator";
 import { 
   Calendar,
   Clock,
@@ -217,6 +218,12 @@ export default function CustomerDashboard() {
                         </Card>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {pastBookings.length > 0 && (
+                  <div className="mt-8">
+                    <GoogleReviewGenerator variant="card" />
                   </div>
                 )}
               </>
