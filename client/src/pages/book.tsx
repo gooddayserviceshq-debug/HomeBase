@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PropertyMeasurement } from "@/components/property-measurement";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { 
   Form,
   FormControl,
@@ -56,6 +57,7 @@ export default function Book() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [propertyAddress, setPropertyAddress] = useState("");
+  const [isAddressValid, setIsAddressValid] = useState(false);
   const [addressConfirmed, setAddressConfirmed] = useState(false);
 
   const { data: services = [] } = useQuery<Service[]>({
@@ -113,14 +115,26 @@ export default function Book() {
     setQuote(null);
     form.setValue("squareFootage", 0);
     setPropertyAddress("");
+    setIsAddressValid(false);
     setAddressConfirmed(false);
     setStep(2);
   };
 
+  const handleAddressChange = (address: string, isValid: boolean) => {
+    setPropertyAddress(address);
+    setIsAddressValid(isValid);
+  };
+
   const handleAddressConfirm = () => {
-    if (propertyAddress.trim()) {
+    if (propertyAddress.trim() && isAddressValid) {
       setAddressConfirmed(true);
       form.setValue("address", propertyAddress);
+    } else {
+      toast({
+        title: "Invalid Address",
+        description: "Please select a valid address from the autocomplete suggestions.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -244,32 +258,30 @@ export default function Book() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MapPin className="h-6 w-6" />
-                    Property Address
+                    Property Address Verification
                   </CardTitle>
                   <CardDescription>
-                    Enter your property address for accurate measurement
+                    Enter your property address - we'll verify it's accurate for measurement
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="propertyAddress">Street Address</Label>
-                    <Input
-                      id="propertyAddress"
-                      type="text"
-                      placeholder="123 Main St, City, State ZIP"
-                      value={propertyAddress}
-                      onChange={(e) => setPropertyAddress(e.target.value)}
-                      data-testid="input-property-address"
-                    />
-                  </div>
+                  <AddressAutocomplete
+                    onAddressSelected={handleAddressChange}
+                    placeholder="Start typing your address..."
+                  />
                   <Button 
                     onClick={handleAddressConfirm}
-                    disabled={!propertyAddress.trim()}
+                    disabled={!propertyAddress.trim() || !isAddressValid}
                     className="w-full"
                     data-testid="button-confirm-address"
                   >
                     Continue to Measurement <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
+                  {propertyAddress && !isAddressValid && (
+                    <p className="text-sm text-muted-foreground">
+                      Please select your address from the dropdown suggestions to continue
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             ) : (
@@ -506,10 +518,18 @@ export default function Book() {
                       name="address"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Service Address</FormLabel>
+                          <FormLabel>Service Address (Verified)</FormLabel>
                           <FormControl>
-                            <Input {...field} data-testid="input-address" />
+                            <Input 
+                              {...field} 
+                              disabled 
+                              className="bg-muted"
+                              data-testid="input-address" 
+                            />
                           </FormControl>
+                          <p className="text-xs text-muted-foreground">
+                            Address verified in previous step. Go back to change if needed.
+                          </p>
                           <FormMessage />
                         </FormItem>
                       )}
