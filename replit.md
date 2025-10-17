@@ -41,7 +41,7 @@ Preferred communication style: Simple, everyday language.
 - Home: Marketing landing page with service showcase and Good Day Services branding
 - Book: Multi-step booking flow with address-first auto-measurement (service selection → property address → auto-measurement → scheduling → customer details)
 - Customer Dashboard: Appointment lookup and management by email with Google Review generator for completed services
-- Admin Dashboard: Service management, booking oversight, and Google Review link sharing
+- Admin Dashboard: Service management, booking oversight, Google Review link sharing, and customer CSV export for email marketing
 
 **Key Features:**
 - **Logo Integration**: Custom Good Day Services logo displayed in header and favicon
@@ -61,6 +61,12 @@ Preferred communication style: Simple, everyday language.
   - Displayed in customer dashboard after service completion
   - Available in admin dashboard for easy sharing with customers
   - Uses VITE_GOOGLE_PLACE_ID environment variable
+- **Customer CSV Export for Email Marketing**: Export all customer contacts with booking statistics
+  - One-click export button in admin dashboard header
+  - Properly formatted CSV with escaped fields for reliable import
+  - Includes: name, email, phone, address, booking counts, total spent, last booking date, customer since, active/inactive status
+  - Ready for import into Mailchimp, SendGrid, HubSpot, or other email marketing platforms
+  - Available email marketing integrations: SendGrid, Gmail, Resend, HubSpot connectors
 - **Stripe Payment Integration** (configured, awaiting API keys): Ready for secure payment processing when booking appointments
 
 ### Backend Architecture
@@ -75,6 +81,9 @@ Preferred communication style: Simple, everyday language.
 - `/api/quotes` - Real-time price calculation endpoint
 - `/api/bookings` - Appointment creation and retrieval
 - `/api/bookings/customer/:email` - Customer-specific booking lookup
+- `/api/bookings/:id/status` - Update booking status (PATCH)
+- `/api/stats` - Dashboard statistics (total bookings, pending, completed this week, revenue)
+- `/api/customers/export` - Export customer list as CSV with booking statistics
 
 **Business Logic:**
 - Quote calculation: Base price + (square footage × price per square foot)

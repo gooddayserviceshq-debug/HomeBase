@@ -13,6 +13,7 @@ export interface IStorage {
   getService(id: string): Promise<Service | undefined>;
   createService(service: InsertService): Promise<Service>;
   
+  getCustomers(): Promise<Customer[]>;
   getCustomer(id: string): Promise<Customer | undefined>;
   getCustomerByEmail(email: string): Promise<Customer | undefined>;
   createCustomer(customer: InsertCustomer): Promise<Customer>;
@@ -90,6 +91,11 @@ export class MemStorage implements IStorage {
     return service;
   }
 
+  async getCustomers(): Promise<Customer[]> {
+    return Array.from(this.customers.values())
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
   async getCustomer(id: string): Promise<Customer | undefined> {
     return this.customers.get(id);
   }
@@ -137,7 +143,9 @@ export class MemStorage implements IStorage {
   async createBooking(insertBooking: InsertBooking): Promise<Booking> {
     const id = randomUUID();
     const booking: Booking = { 
-      ...insertBooking, 
+      ...insertBooking,
+      status: insertBooking.status || "scheduled",
+      specialInstructions: insertBooking.specialInstructions || null,
       id,
       createdAt: new Date()
     };

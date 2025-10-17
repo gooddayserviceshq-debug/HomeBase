@@ -180,6 +180,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/customers/export", async (_req, res) => {
+    try {
+      const customers = await storage.getCustomers();
+      const bookings = await storage.getBookings();
+
+      // Helper function to escape CSV values
+      const escapeCsvValue = (value: string | number): string => {
+        const stringValue = String(value);
+        // If value contains comma, quote, or newline, wrap in quotes and escape internal quotes
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        return stringValue;
+      };
+
+      // Build customer data with booking statistics
+      const customerData = customers.map(customer => {
+        const customerBookings = bookings.filter(b => b.customerId === customer.id);
+        const completedBookings = customerBookings.filter(b => b.status === "completed");
+        
+        const totalSpent = completedBookings.reduce(
+          (sum, b) => sum + parseFloat(b.totalPrice), 
+          0
+        );
+
+        const lastBooking = customerBookings.length > 0
+          ? new Date(Math.max(...customerBookings.map(b => new Date(b.scheduledDate).getTime())))
+          : null;
+
+        return {
+          name: customer.name,
+          email: customer.email,
+          phone: customer.phone,
+          address: customer.address,
+          totalBookings: customerBookings.length,
+          completedBookings: completedBookings.length,
+          totalSpent: totalSpent.toFixed(2),
+          lastBookingDate: lastBooking ? lastBooking.toISOString().split('T')[0] : 'Never',
+          customerSince: new Date(customer.createdAt).toISOString().split('T')[0],
+          status: customerBookings.length > 0 ? 'Active' : 'Inactive',
+        };
+      });
+
+      // Generate CSV with proper escaping
+      const headers = [
+        'Name',
+        'Email',
+        'Phone',
+        'Address',
+        'Total Bookings',
+        'Completed Bookings',
+        'Total Spent ($)',
+        'Last Booking Date',
+        'Customer Since',
+        'Status',
+      ];
+
+      const csvRows = [
+        headers.join(','),
+        ...customerData.map(customer => [
+          escapeCsvValue(customer.name),
+          escapeCsvValue(customer.email),
+          escapeCsvValue(customer.phone),
+          escapeCsvValue(customer.address),
+          customer.totalBookings,
+          customer.completedBookings,
+          customer.totalSpent,
+          customer.lastBookingDate,
+          customer.customerSince,
+          customer.status,
+        ].join(','))
+      ];
+
+      const csv = csvRows.join('\n');
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="customers-${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send(csv);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to export customers" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

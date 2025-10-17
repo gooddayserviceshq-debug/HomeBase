@@ -24,7 +24,8 @@ import {
   DollarSign,
   CheckCircle2,
   Clock,
-  TrendingUp
+  TrendingUp,
+  Download
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -84,6 +85,22 @@ export default function AdminDashboard() {
     updateStatusMutation.mutate({ bookingId, status: newStatus });
   };
 
+  const handleExportCustomers = async () => {
+    try {
+      window.open('/api/customers/export', '_blank');
+      toast({
+        title: "Export Started",
+        description: "Your customer list is downloading as CSV.",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to export customer data.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const todayBookings = bookings.filter(b => {
     const bookingDate = new Date(b.scheduledDate);
     const today = new Date();
@@ -94,8 +111,20 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-background">
       <div className="border-b bg-card">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage bookings and track performance</p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+              <p className="text-muted-foreground">Manage bookings and track performance</p>
+            </div>
+            <Button 
+              onClick={handleExportCustomers}
+              variant="outline"
+              data-testid="button-export-customers"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export Customer List
+            </Button>
+          </div>
         </div>
       </div>
 
