@@ -46,6 +46,11 @@ export function Header() {
             <Link href="/warranties" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/warranties" ? "text-foreground" : "text-muted-foreground"}`}>
               Warranties
             </Link>
+            {isAuthenticated && (
+              <Link href="/admin" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/admin" ? "text-foreground" : "text-muted-foreground"}`}>
+                Admin
+              </Link>
+            )}
           </nav>
 
           <div className="flex items-center gap-2">
@@ -129,6 +134,13 @@ export function Header() {
                 Warranties
               </Button>
             </Link>
+            {isAuthenticated && (
+              <Link href="/admin" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start" data-testid="link-mobile-admin">
+                  Admin
+                </Button>
+              </Link>
+            )}
             <Link href="/quote" onClick={() => setMobileMenuOpen(false)}>
               <Button variant="ghost" className="w-full justify-start" data-testid="link-mobile-quote">
                 Get Quote

@@ -388,6 +388,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin routes - Protected with authentication
+  app.get("/api/admin/stats", isAuthenticated, async (req: any, res) => {
+    try {
+      const orders = await storage.getOrders();
+      const totalRevenue = orders.reduce((sum, order) => sum + parseFloat(order.total), 0);
+      const pendingOrders = orders.filter(o => o.status === "pending").length;
+      
+      res.json({
+        totalRevenue,
+        totalOrders: orders.length,
+        pendingOrders,
+        totalCustomers: new Set(orders.map(o => o.email)).size,
+        newCustomersThisMonth: 0, // Placeholder
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch stats" });
+    }
+  });
+
+  app.get("/api/admin/orders", isAuthenticated, async (req: any, res) => {
+    try {
+      const orders = await storage.getOrders();
+      const ordersWithItems = await Promise.all(
+        orders.map(async (order) => ({
+          ...order,
+          items: await storage.getOrderItems(order.id),
+        }))
+      );
+      res.json(ordersWithItems);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch orders" });
+    }
+  });
+
+  app.patch("/api/admin/orders/:id/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      // Validate status
+      const validStatuses = ["pending", "processing", "shipped", "completed", "cancelled"];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+      
+      const order = await storage.updateOrderStatus(id, status);
+      res.json(order);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update order status" });
+    }
+  });
+
+  app.post("/api/admin/products", isAuthenticated, async (req: any, res) => {
+    try {
+      // Validate input
+      const productData = insertProductSchema.parse(req.body);
+      const product = await storage.createProduct(productData);
+      res.json(product);
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        res.status(400).json({ error: "Invalid product data", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to create product" });
+      }
+    }
+  });
+
+  app.put("/api/admin/products/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      // Validate input
+      const productData = insertProductSchema.parse(req.body);
+      const product = await storage.updateProduct(id, productData);
+      res.json(product);
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        res.status(400).json({ error: "Invalid product data", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to update product" });
+      }
+    }
+  });
+
+  app.delete("/api/admin/products/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteProduct(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete product" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
