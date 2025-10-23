@@ -3,48 +3,110 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { 
-  quoteSchema, 
-  insertBookingSchema, 
-  insertCustomerSchema,
+  quoteCalculationSchema,
+  insertQuoteRequestSchema,
   type QuoteResponse,
-  type Service,
-  type Booking,
-  type Customer
+  type QuoteTiers
 } from "@shared/schema";
+
+const BASE_RATES = {
+  interlocking_pavers: 0.35,
+  poured_concrete: 0.25,
+  stamped_concrete: 0.30,
+  brick_pavers: 0.40,
+};
+
+const CONDITION_MULTIPLIERS = {
+  lightly_dirty: 1.0,
+  heavily_soiled: 1.25,
+  stained_damaged: 1.5,
+};
+
+const SEALER_RATES = {
+  acrylic: 0.75,
+  penetrating: 1.25,
+};
+
+const POLYMERIC_SAND_COST_PER_SQ_FT = 0.50;
+
+function calculateQuoteTiers(
+  squareFootage: number,
+  surfaceType: keyof typeof BASE_RATES,
+  condition: keyof typeof CONDITION_MULTIPLIERS,
+  includePolymericSand: boolean
+): QuoteTiers {
+  const baseRate = BASE_RATES[surfaceType];
+  const conditionMultiplier = CONDITION_MULTIPLIERS[condition];
+  
+  const cleaningCost = squareFootage * baseRate * conditionMultiplier;
+  
+  const basicPrice = cleaningCost + (squareFootage * SEALER_RATES.acrylic);
+  
+  const sandCost = includePolymericSand ? squareFootage * POLYMERIC_SAND_COST_PER_SQ_FT : 0;
+  const recommendedPrice = cleaningCost + sandCost + (squareFootage * SEALER_RATES.acrylic);
+  
+  const premiumPrice = cleaningCost + sandCost + (squareFootage * SEALER_RATES.penetrating);
+  
+  return {
+    basic: {
+      name: "Basic Restoration",
+      description: "Professional cleaning and protection for immediate aesthetic improvement",
+      features: [
+        "Professional pressure washing of all surfaces",
+        "Spot treatment of oil and organic stains",
+        "Application of high-quality Acrylic Sealer",
+        "Color enhancement and stain resistance",
+      ],
+      price: Math.round(basicPrice * 100) / 100,
+    },
+    recommended: {
+      name: "Recommended Restoration",
+      description: "Complete restoration addressing stability and long-term health of your pavers",
+      features: [
+        "Everything in Basic package",
+        "Full removal of old joint material",
+        "Installation of new Polymeric Sand",
+        "Locks pavers, prevents weeds, stabilizes surface",
+        "Acrylic Sealer for protection",
+      ],
+      price: Math.round(recommendedPrice * 100) / 100,
+    },
+    premium: {
+      name: "Premium Protection",
+      description: "Ultimate protection against harsh elements with minimal future maintenance",
+      features: [
+        "Everything in Recommended package",
+        "Upgrade to Penetrating Siloxane/Silane Sealer",
+        "Superior freeze-thaw protection",
+        "5-7+ year protection lifespan",
+        "Maximum resistance to de-icing salts",
+      ],
+      price: Math.round(premiumPrice * 100) / 100,
+    },
+  };
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  app.get("/api/services", async (_req, res) => {
+  app.post("/api/calculate-quote", async (req, res) => {
     try {
-      const services = await storage.getServices();
-      res.json(services);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch services" });
-    }
-  });
-
-  app.post("/api/quotes", async (req, res) => {
-    try {
-      const { serviceId, squareFootage } = quoteSchema.parse(req.body);
+      const data = quoteCalculationSchema.parse(req.body);
       
-      const service = await storage.getService(serviceId);
-      if (!service) {
-        return res.status(404).json({ error: "Service not found" });
-      }
+      const squareFootage = data.length * data.width;
+      
+      const tiers = calculateQuoteTiers(
+        squareFootage,
+        data.surfaceType,
+        data.condition,
+        data.includePolymericSand
+      );
 
-      const basePrice = parseFloat(service.basePrice);
-      const pricePerSqFt = parseFloat(service.pricePerSqFt);
-      const areaPrice = squareFootage * pricePerSqFt;
-      const totalPrice = basePrice + areaPrice;
-
-      const quote: QuoteResponse = {
-        basePrice,
-        areaPrice,
-        totalPrice,
-        service,
+      const response: QuoteResponse = {
+        squareFootage,
+        tiers,
       };
 
-      res.json(quote);
+      res.json(response);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid quote request", details: error.errors });
@@ -53,213 +115,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/bookings", async (req, res) => {
+  app.post("/api/quote-requests", async (req, res) => {
     try {
-      const { customer: customerData, booking: bookingData } = req.body;
+      const quoteData = insertQuoteRequestSchema.parse(req.body);
+      
+      const squareFootage = quoteData.length * quoteData.width;
+      
+      const tiers = calculateQuoteTiers(
+        squareFootage,
+        quoteData.surfaceType as keyof typeof BASE_RATES,
+        quoteData.condition as keyof typeof CONDITION_MULTIPLIERS,
+        quoteData.includePolymericSand
+      );
 
-      const validatedCustomer = insertCustomerSchema.parse(customerData);
-      const validatedBooking = insertBookingSchema.omit({ customerId: true }).parse(bookingData);
-
-      const customer = await storage.createCustomer(validatedCustomer);
-
-      const booking = await storage.createBooking({
-        ...validatedBooking,
-        customerId: customer.id,
+      const quoteRequest = await storage.createQuoteRequest(quoteData, {
+        squareFootage,
+        basicTierPrice: tiers.basic.price.toString(),
+        recommendedTierPrice: tiers.recommended.price.toString(),
+        premiumTierPrice: tiers.premium.price.toString(),
       });
 
-      res.json({ bookingId: booking.id });
+      res.json({ 
+        success: true, 
+        quoteId: quoteRequest.id,
+        tiers 
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid booking data", details: error.errors });
+        return res.status(400).json({ error: "Invalid quote request data", details: error.errors });
       }
-      res.status(500).json({ error: "Failed to create booking" });
+      res.status(500).json({ error: "Failed to save quote request" });
     }
   });
 
-  app.get("/api/bookings", async (_req, res) => {
+  app.get("/api/quote-requests", async (_req, res) => {
     try {
-      const bookings = await storage.getBookings();
-      
-      const bookingsWithDetails = await Promise.all(
-        bookings.map(async (booking) => {
-          const customer = await storage.getCustomer(booking.customerId);
-          const service = await storage.getService(booking.serviceId);
-          
-          return {
-            ...booking,
-            customer,
-            service,
-          };
-        })
-      );
-
-      res.json(bookingsWithDetails);
+      const quotes = await storage.getQuoteRequests();
+      res.json(quotes);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch bookings" });
+      res.status(500).json({ error: "Failed to fetch quote requests" });
     }
   });
 
-  app.get("/api/bookings/customer/:email", async (req, res) => {
-    try {
-      const { email } = req.params;
-      const bookings = await storage.getBookingsByCustomerEmail(email);
-      
-      const bookingsWithDetails = await Promise.all(
-        bookings.map(async (booking) => {
-          const customer = await storage.getCustomer(booking.customerId);
-          const service = await storage.getService(booking.serviceId);
-          
-          return {
-            ...booking,
-            customer,
-            service,
-          };
-        })
-      );
-
-      res.json(bookingsWithDetails);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch customer bookings" });
-    }
-  });
-
-  app.patch("/api/bookings/:id/status", async (req, res) => {
+  app.get("/api/quote-requests/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const { status } = req.body;
-
-      if (!status || typeof status !== "string") {
-        return res.status(400).json({ error: "Status is required" });
+      const quote = await storage.getQuoteRequest(id);
+      
+      if (!quote) {
+        return res.status(404).json({ error: "Quote request not found" });
       }
 
-      const validStatuses = ["scheduled", "in-progress", "completed", "cancelled"];
-      if (!validStatuses.includes(status)) {
-        return res.status(400).json({ error: "Invalid status value" });
-      }
-
-      const updatedBooking = await storage.updateBookingStatus(id, status);
-      
-      if (!updatedBooking) {
-        return res.status(404).json({ error: "Booking not found" });
-      }
-
-      res.json(updatedBooking);
+      res.json(quote);
     } catch (error) {
-      res.status(500).json({ error: "Failed to update booking status" });
-    }
-  });
-
-  app.get("/api/stats", async (_req, res) => {
-    try {
-      const bookings = await storage.getBookings();
-      
-      const totalBookings = bookings.length;
-      const pendingBookings = bookings.filter(b => 
-        b.status === "scheduled" || b.status === "in-progress"
-      ).length;
-
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-      
-      const completedThisWeek = bookings.filter(b => 
-        b.status === "completed" && new Date(b.createdAt) >= oneWeekAgo
-      ).length;
-
-      const totalRevenue = bookings
-        .filter(b => b.status === "completed")
-        .reduce((sum, b) => sum + parseFloat(b.totalPrice), 0);
-
-      res.json({
-        totalBookings,
-        pendingBookings,
-        completedThisWeek,
-        totalRevenue,
-      });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch stats" });
-    }
-  });
-
-  app.get("/api/customers/export", async (_req, res) => {
-    try {
-      const customers = await storage.getCustomers();
-      const bookings = await storage.getBookings();
-
-      // Helper function to escape CSV values
-      const escapeCsvValue = (value: string | number): string => {
-        const stringValue = String(value);
-        // If value contains comma, quote, or newline, wrap in quotes and escape internal quotes
-        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
-          return `"${stringValue.replace(/"/g, '""')}"`;
-        }
-        return stringValue;
-      };
-
-      // Build customer data with booking statistics
-      const customerData = customers.map(customer => {
-        const customerBookings = bookings.filter(b => b.customerId === customer.id);
-        const completedBookings = customerBookings.filter(b => b.status === "completed");
-        
-        const totalSpent = completedBookings.reduce(
-          (sum, b) => sum + parseFloat(b.totalPrice), 
-          0
-        );
-
-        const lastBooking = customerBookings.length > 0
-          ? new Date(Math.max(...customerBookings.map(b => new Date(b.scheduledDate).getTime())))
-          : null;
-
-        return {
-          name: customer.name,
-          email: customer.email,
-          phone: customer.phone,
-          address: customer.address,
-          totalBookings: customerBookings.length,
-          completedBookings: completedBookings.length,
-          totalSpent: totalSpent.toFixed(2),
-          lastBookingDate: lastBooking ? lastBooking.toISOString().split('T')[0] : 'Never',
-          customerSince: new Date(customer.createdAt).toISOString().split('T')[0],
-          status: customerBookings.length > 0 ? 'Active' : 'Inactive',
-        };
-      });
-
-      // Generate CSV with proper escaping
-      const headers = [
-        'Name',
-        'Email',
-        'Phone',
-        'Address',
-        'Total Bookings',
-        'Completed Bookings',
-        'Total Spent ($)',
-        'Last Booking Date',
-        'Customer Since',
-        'Status',
-      ];
-
-      const csvRows = [
-        headers.join(','),
-        ...customerData.map(customer => [
-          escapeCsvValue(customer.name),
-          escapeCsvValue(customer.email),
-          escapeCsvValue(customer.phone),
-          escapeCsvValue(customer.address),
-          customer.totalBookings,
-          customer.completedBookings,
-          customer.totalSpent,
-          customer.lastBookingDate,
-          customer.customerSince,
-          customer.status,
-        ].join(','))
-      ];
-
-      const csv = csvRows.join('\n');
-
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename="customers-${new Date().toISOString().split('T')[0]}.csv"`);
-      res.send(csv);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to export customers" });
+      res.status(500).json({ error: "Failed to fetch quote request" });
     }
   });
 
