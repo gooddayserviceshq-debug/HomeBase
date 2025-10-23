@@ -1,13 +1,16 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogIn, LogOut } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import logoUrl from "@assets/transparent GDS social avatar logo color (1)_1760659313459.png";
 
 export function Header() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, isAuthenticated, isLoading } = useAuth();
   
   const isHome = location === "/";
   const isAdmin = location.startsWith("/admin");
@@ -36,6 +39,40 @@ export function Header() {
 
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            
+            {!isLoading && (
+              <>
+                {isAuthenticated && user ? (
+                  <div className="hidden md:flex items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.profileImageUrl || undefined} alt={user.firstName || "User"} style={{ objectFit: 'cover' }} />
+                      <AvatarFallback>{user.firstName?.[0] || user.email?.[0] || "U"}</AvatarFallback>
+                    </Avatar>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.location.href = "/api/logout"}
+                      data-testid="button-logout"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logout
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.location.href = "/api/login"}
+                    className="hidden md:flex"
+                    data-testid="button-login"
+                  >
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Login
+                  </Button>
+                )}
+              </>
+            )}
+            
             <Button asChild size="default" className="hidden md:flex" data-testid="button-get-quote">
               <Link href="/quote">Get Quote</Link>
             </Button>
@@ -71,6 +108,47 @@ export function Header() {
                 Get Quote
               </Button>
             </Link>
+            
+            {!isLoading && (
+              <>
+                {isAuthenticated && user ? (
+                  <>
+                    <div className="flex items-center gap-2 px-3 py-2 mt-2 border-t">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user.profileImageUrl || undefined} alt={user.firstName || "User"} style={{ objectFit: 'cover' }} />
+                        <AvatarFallback>{user.firstName?.[0] || user.email?.[0] || "U"}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-medium">{user.firstName || user.email}</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        window.location.href = "/api/logout";
+                      }}
+                      data-testid="button-mobile-logout"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logout
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start mt-2 border-t pt-2"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      window.location.href = "/api/login";
+                    }}
+                    data-testid="button-mobile-login"
+                  >
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Login
+                  </Button>
+                )}
+              </>
+            )}
           </nav>
         </div>
       )}
