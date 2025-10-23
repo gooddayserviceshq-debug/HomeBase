@@ -40,11 +40,12 @@ export function getSession() {
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true, // Changed to true to allow anonymous cart sessions
     cookie: {
       httpOnly: true,
       secure: isProduction,
       maxAge: sessionTtl,
+      sameSite: "lax", // Added for better cookie handling
     },
   });
 }
