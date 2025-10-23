@@ -40,6 +40,12 @@ export function Header() {
             <Link href="/products" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/products" ? "text-foreground" : "text-muted-foreground"}`}>
               Products
             </Link>
+            <Link href="/documents" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/documents" ? "text-foreground" : "text-muted-foreground"}`}>
+              Resources
+            </Link>
+            <Link href="/warranties" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/warranties" ? "text-foreground" : "text-muted-foreground"}`}>
+              Warranties
+            </Link>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -111,6 +117,16 @@ export function Header() {
             <Link href="/products" onClick={() => setMobileMenuOpen(false)}>
               <Button variant="ghost" className="w-full justify-start" data-testid="link-mobile-products">
                 Products
+              </Button>
+            </Link>
+            <Link href="/documents" onClick={() => setMobileMenuOpen(false)}>
+              <Button variant="ghost" className="w-full justify-start" data-testid="link-mobile-documents">
+                Resources
+              </Button>
+            </Link>
+            <Link href="/warranties" onClick={() => setMobileMenuOpen(false)}>
+              <Button variant="ghost" className="w-full justify-start" data-testid="link-mobile-warranties">
+                Warranties
               </Button>
             </Link>
             <Link href="/quote" onClick={() => setMobileMenuOpen(false)}>

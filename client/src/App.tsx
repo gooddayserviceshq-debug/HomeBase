@@ -9,6 +9,8 @@ import Home from "@/pages/home";
 import Quote from "@/pages/quote";
 import Products from "@/pages/products";
 import Checkout from "@/pages/checkout";
+import Documents from "@/pages/documents";
+import Warranties from "@/pages/warranties";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -18,6 +20,8 @@ function Router() {
       <Route path="/quote" component={Quote} />
       <Route path="/products" component={Products} />
       <Route path="/checkout" component={Checkout} />
+      <Route path="/documents" component={Documents} />
+      <Route path="/warranties" component={Warranties} />
       <Route component={NotFound} />
     </Switch>
   );

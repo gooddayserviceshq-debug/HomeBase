@@ -372,6 +372,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/warranties", async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const warrantyData = req.body;
+      
+      const warranty = await storage.createWarranty({
+        ...warrantyData,
+        userId,
+      });
+      
+      res.json(warranty);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create warranty" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
