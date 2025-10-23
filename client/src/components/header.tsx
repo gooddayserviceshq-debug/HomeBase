@@ -5,12 +5,14 @@ import { Menu, X, LogIn, LogOut } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { type User } from "@shared/schema";
 import logoUrl from "@assets/transparent GDS social avatar logo color (1)_1760659313459.png";
 
 export function Header() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isAuthenticated, isLoading } = useAuth();
+  const typedUser = user as User | undefined;
   
   const isHome = location === "/";
   const isAdmin = location.startsWith("/admin");
@@ -42,11 +44,11 @@ export function Header() {
             
             {!isLoading && (
               <>
-                {isAuthenticated && user ? (
+                {isAuthenticated && typedUser ? (
                   <div className="hidden md:flex items-center gap-2">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.profileImageUrl || undefined} alt={user.firstName || "User"} style={{ objectFit: 'cover' }} />
-                      <AvatarFallback>{user.firstName?.[0] || user.email?.[0] || "U"}</AvatarFallback>
+                      <AvatarImage src={typedUser.profileImageUrl || undefined} alt={typedUser.firstName || "User"} style={{ objectFit: 'cover' }} />
+                      <AvatarFallback>{typedUser.firstName?.[0] || typedUser.email?.[0] || "U"}</AvatarFallback>
                     </Avatar>
                     <Button
                       variant="outline"
@@ -111,14 +113,14 @@ export function Header() {
             
             {!isLoading && (
               <>
-                {isAuthenticated && user ? (
+                {isAuthenticated && typedUser ? (
                   <>
                     <div className="flex items-center gap-2 px-3 py-2 mt-2 border-t">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.profileImageUrl || undefined} alt={user.firstName || "User"} style={{ objectFit: 'cover' }} />
-                        <AvatarFallback>{user.firstName?.[0] || user.email?.[0] || "U"}</AvatarFallback>
+                        <AvatarImage src={typedUser.profileImageUrl || undefined} alt={typedUser.firstName || "User"} style={{ objectFit: 'cover' }} />
+                        <AvatarFallback>{typedUser.firstName?.[0] || typedUser.email?.[0] || "U"}</AvatarFallback>
                       </Avatar>
-                      <span className="text-sm font-medium">{user.firstName || user.email}</span>
+                      <span className="text-sm font-medium">{typedUser.firstName || typedUser.email}</span>
                     </div>
                     <Button
                       variant="ghost"

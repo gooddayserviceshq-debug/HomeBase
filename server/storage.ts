@@ -78,7 +78,9 @@ export class MemStorage implements IStorage {
       ...insertQuoteRequest,
       ...calculatedData,
       id,
-      createdAt: new Date()
+      createdAt: new Date(),
+      includeSealer: insertQuoteRequest.includeSealer ?? false,
+      includePolymericSand: insertQuoteRequest.includePolymericSand ?? false,
     };
     this.quoteRequests.set(id, quoteRequest);
     return quoteRequest;

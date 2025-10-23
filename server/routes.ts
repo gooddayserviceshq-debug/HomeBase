@@ -142,7 +142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         squareFootage,
         quoteData.surfaceType as keyof typeof BASE_RATES,
         quoteData.condition as keyof typeof CONDITION_MULTIPLIERS,
-        quoteData.includePolymericSand
+        quoteData.includePolymericSand ?? false
       );
 
       const quoteRequest = await storage.createQuoteRequest(quoteData, {
