@@ -17,6 +17,7 @@ export const quoteRequests = pgTable("quote_requests", {
   condition: text("condition").notNull(),
   includeSealer: boolean("include_sealer").notNull().default(false),
   includePolymericSand: boolean("include_polymeric_sand").notNull().default(false),
+  selectedTier: text("selected_tier").notNull(),
   basicTierPrice: decimal("basic_tier_price", { precision: 10, scale: 2 }).notNull(),
   recommendedTierPrice: decimal("recommended_tier_price", { precision: 10, scale: 2 }).notNull(),
   premiumTierPrice: decimal("premium_tier_price", { precision: 10, scale: 2 }).notNull(),

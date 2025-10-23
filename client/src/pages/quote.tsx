@@ -13,6 +13,14 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { quoteCalculationSchema, type QuoteCalculation, type QuoteResponse, insertQuoteRequestSchema, type InsertQuoteRequest } from "@shared/schema";
 import { Loader2, CheckCircle2, Sparkles } from "lucide-react";
+import { z } from "zod";
+
+const contactFormSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  phone: z.string().min(10, "Please enter a valid phone number"),
+  address: z.string().min(5, "Please enter your full address"),
+});
 
 const SERVICE_TYPES = [
   { value: "driveway_restoration", label: "Driveway Restoration" },
@@ -36,7 +44,8 @@ const CONDITIONS = [
 
 export default function Quote() {
   const [quoteResult, setQuoteResult] = useState<QuoteResponse | null>(null);
-  const [contactInfo, setContactInfo] = useState<InsertQuoteRequest | null>(null);
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [selectedTier, setSelectedTier] = useState<"basic" | "recommended" | "premium" | null>(null);
   const { toast } = useToast();
 
   const form = useForm<QuoteCalculation>({
@@ -49,6 +58,16 @@ export default function Quote() {
       condition: "lightly_dirty",
       includeSealer: true,
       includePolymericSand: false,
+    },
+  });
+
+  const contactForm = useForm<z.infer<typeof contactFormSchema>>({
+    resolver: zodResolver(contactFormSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
     },
   });
 
@@ -79,7 +98,9 @@ export default function Quote() {
         title: "Quote Request Received!",
         description: "We'll contact you within 24 hours to discuss your project.",
       });
-      setContactInfo(null);
+      setShowContactForm(false);
+      contactForm.reset();
+      setSelectedTier(null);
     },
     onError: () => {
       toast({
@@ -95,12 +116,23 @@ export default function Quote() {
   };
 
   const handleRequestQuote = (tier: "basic" | "recommended" | "premium") => {
+    setSelectedTier(tier);
+    setShowContactForm(true);
+  };
+
+  const submitContactInfo = (contactData: z.infer<typeof contactFormSchema>) => {
+    if (!selectedTier) {
+      toast({
+        title: "Error",
+        description: "Please select a tier",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const formData = form.getValues();
-    setContactInfo({
-      name: "",
-      email: "",
-      phone: "",
-      address: "",
+    const quoteRequest: InsertQuoteRequest = {
+      ...contactData,
       serviceType: formData.serviceType,
       surfaceType: formData.surfaceType,
       length: formData.length,
@@ -108,14 +140,10 @@ export default function Quote() {
       condition: formData.condition,
       includeSealer: formData.includeSealer,
       includePolymericSand: formData.includePolymericSand,
-    });
-  };
-
-  const submitContactInfo = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (contactInfo) {
-      requestQuoteMutation.mutate(contactInfo);
-    }
+      selectedTier: selectedTier,
+    };
+    
+    requestQuoteMutation.mutate(quoteRequest);
   };
 
   return (
@@ -445,76 +473,100 @@ export default function Quote() {
         </div>
       </div>
 
-      {contactInfo && (
+      {showContactForm && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <Card className="w-full max-w-md">
             <CardHeader>
               <CardTitle>Contact Information</CardTitle>
               <CardDescription>
-                Enter your details to receive your official quote
+                Enter your details to receive your official {selectedTier} tier quote
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={submitContactInfo} className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Name</label>
-                  <Input
-                    required
-                    value={contactInfo.name}
-                    onChange={(e) => setContactInfo({ ...contactInfo, name: e.target.value })}
-                    data-testid="input-contact-name"
+              <Form {...contactForm}>
+                <form onSubmit={contactForm.handleSubmit(submitContactInfo)} className="space-y-4">
+                  <FormField
+                    control={contactForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} data-testid="input-contact-name" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Email</label>
-                  <Input
-                    type="email"
-                    required
-                    value={contactInfo.email}
-                    onChange={(e) => setContactInfo({ ...contactInfo, email: e.target.value })}
-                    data-testid="input-contact-email"
+                  
+                  <FormField
+                    control={contactForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" {...field} data-testid="input-contact-email" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Phone</label>
-                  <Input
-                    type="tel"
-                    required
-                    value={contactInfo.phone}
-                    onChange={(e) => setContactInfo({ ...contactInfo, phone: e.target.value })}
-                    data-testid="input-contact-phone"
+                  
+                  <FormField
+                    control={contactForm.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone</FormLabel>
+                        <FormControl>
+                          <Input type="tel" {...field} data-testid="input-contact-phone" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Property Address</label>
-                  <Input
-                    required
-                    value={contactInfo.address}
-                    onChange={(e) => setContactInfo({ ...contactInfo, address: e.target.value })}
-                    data-testid="input-contact-address"
+                  
+                  <FormField
+                    control={contactForm.control}
+                    name="address"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Property Address</FormLabel>
+                        <FormControl>
+                          <Input {...field} data-testid="input-contact-address" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => setContactInfo(null)}
-                    data-testid="button-cancel-contact"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="flex-1"
-                    disabled={requestQuoteMutation.isPending}
-                    data-testid="button-submit-contact"
-                  >
-                    {requestQuoteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Submit Request
-                  </Button>
-                </div>
-              </form>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        setShowContactForm(false);
+                        setSelectedTier(null);
+                        contactForm.reset();
+                      }}
+                      data-testid="button-cancel-contact"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="flex-1"
+                      disabled={requestQuoteMutation.isPending}
+                      data-testid="button-submit-contact"
+                    >
+                      {requestQuoteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Submit Request
+                    </Button>
+                  </div>
+                </form>
+              </Form>
             </CardContent>
           </Card>
         </div>
