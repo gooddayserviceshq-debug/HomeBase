@@ -8,6 +8,7 @@ import { Header } from "@/components/header";
 import Home from "@/pages/home";
 import Quote from "@/pages/quote";
 import Products from "@/pages/products";
+import Checkout from "@/pages/checkout";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/quote" component={Quote} />
       <Route path="/products" component={Products} />
+      <Route path="/checkout" component={Checkout} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -323,6 +323,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Order routes
+  app.post("/api/orders", async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const { items, ...orderData } = req.body;
+      
+      const order = await storage.createOrder(
+        { ...orderData, userId },
+        items
+      );
+      
+      res.json(order);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create order" });
+    }
+  });
+
+  app.get("/api/orders", async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const orders = await storage.getOrders(userId);
+      res.json(orders);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch orders" });
+    }
+  });
+
+  app.post("/api/cart/clear", async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const sessionId = req.sessionID;
+      await storage.clearCart(userId, sessionId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to clear cart" });
+    }
+  });
+
   // Warranty routes
   app.get("/api/warranties", async (req: any, res) => {
     try {

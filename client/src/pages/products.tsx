@@ -345,7 +345,12 @@ export default function Products() {
                   <span>Subtotal</span>
                   <span data-testid="cart-subtotal">${cartSubtotal.toFixed(2)}</span>
                 </div>
-                <Button className="w-full" size="lg" data-testid="button-checkout">
+                <Button 
+                  className="w-full" 
+                  size="lg" 
+                  data-testid="button-checkout"
+                  onClick={() => window.location.href = "/checkout"}
+                >
                   Proceed to Checkout
                 </Button>
               </div>
