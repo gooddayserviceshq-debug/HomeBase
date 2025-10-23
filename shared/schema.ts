@@ -1,65 +1,74 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, decimal } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, decimal, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Service Types
-export const services = pgTable("services", {
+export const quoteRequests = pgTable("quote_requests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
-  description: text("description").notNull(),
-  basePrice: decimal("base_price", { precision: 10, scale: 2 }).notNull(),
-  pricePerSqFt: decimal("price_per_sq_ft", { precision: 10, scale: 2 }).notNull(),
-  icon: text("icon").notNull(),
-});
-
-export const insertServiceSchema = createInsertSchema(services).omit({ id: true });
-export type InsertService = z.infer<typeof insertServiceSchema>;
-export type Service = typeof services.$inferSelect;
-
-// Customers
-export const customers = pgTable("customers", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  email: text("email").notNull().unique(),
+  email: text("email").notNull(),
   phone: text("phone").notNull(),
   address: text("address").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true });
-export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
-export type Customer = typeof customers.$inferSelect;
-
-// Bookings/Appointments
-export const bookings = pgTable("bookings", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  customerId: varchar("customer_id").notNull(),
-  serviceId: varchar("service_id").notNull(),
+  serviceType: text("service_type").notNull(),
+  surfaceType: text("surface_type").notNull(),
+  length: integer("length").notNull(),
+  width: integer("width").notNull(),
   squareFootage: integer("square_footage").notNull(),
-  totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
-  scheduledDate: timestamp("scheduled_date").notNull(),
-  status: text("status").notNull().default("scheduled"), // scheduled, in-progress, completed, cancelled
-  specialInstructions: text("special_instructions"),
+  condition: text("condition").notNull(),
+  includeSealer: boolean("include_sealer").notNull().default(false),
+  includePolymericSand: boolean("include_polymeric_sand").notNull().default(false),
+  basicTierPrice: decimal("basic_tier_price", { precision: 10, scale: 2 }).notNull(),
+  recommendedTierPrice: decimal("recommended_tier_price", { precision: 10, scale: 2 }).notNull(),
+  premiumTierPrice: decimal("premium_tier_price", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertBookingSchema = createInsertSchema(bookings).omit({ id: true, createdAt: true }).extend({
-  scheduledDate: z.coerce.date(),
-});
-export type InsertBooking = z.infer<typeof insertBookingSchema>;
-export type Booking = typeof bookings.$inferSelect;
-
-// Quote calculation schema (for API)
-export const quoteSchema = z.object({
-  serviceId: z.string(),
-  squareFootage: z.number().min(1).max(100000),
+export const insertQuoteRequestSchema = createInsertSchema(quoteRequests).omit({ 
+  id: true, 
+  createdAt: true,
+  squareFootage: true,
+  basicTierPrice: true,
+  recommendedTierPrice: true,
+  premiumTierPrice: true,
 });
 
-export type QuoteRequest = z.infer<typeof quoteSchema>;
+export type InsertQuoteRequest = z.infer<typeof insertQuoteRequestSchema>;
+export type QuoteRequest = typeof quoteRequests.$inferSelect;
+
+export const quoteCalculationSchema = z.object({
+  serviceType: z.enum(["driveway_restoration", "patio_restoration", "walkway_restoration", "pool_deck_restoration"]),
+  surfaceType: z.enum(["interlocking_pavers", "poured_concrete", "stamped_concrete", "brick_pavers"]),
+  length: z.number().min(1).max(500),
+  width: z.number().min(1).max(500),
+  condition: z.enum(["lightly_dirty", "heavily_soiled", "stained_damaged"]),
+  includeSealer: z.boolean(),
+  includePolymericSand: z.boolean(),
+});
+
+export type QuoteCalculation = z.infer<typeof quoteCalculationSchema>;
+
+export type QuoteTiers = {
+  basic: {
+    name: string;
+    description: string;
+    features: string[];
+    price: number;
+  };
+  recommended: {
+    name: string;
+    description: string;
+    features: string[];
+    price: number;
+  };
+  premium: {
+    name: string;
+    description: string;
+    features: string[];
+    price: number;
+  };
+};
+
 export type QuoteResponse = {
-  basePrice: number;
-  areaPrice: number;
-  totalPrice: number;
-  service: Service;
+  squareFootage: number;
+  tiers: QuoteTiers;
 };
