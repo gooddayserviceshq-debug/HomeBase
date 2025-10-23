@@ -37,6 +37,9 @@ export function Header() {
             <a href="#services" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
               Services
             </a>
+            <Link href="/products" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/products" ? "text-foreground" : "text-muted-foreground"}`}>
+              Products
+            </Link>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -105,6 +108,11 @@ export function Header() {
                 Services
               </Button>
             </a>
+            <Link href="/products" onClick={() => setMobileMenuOpen(false)}>
+              <Button variant="ghost" className="w-full justify-start" data-testid="link-mobile-products">
+                Products
+              </Button>
+            </Link>
             <Link href="/quote" onClick={() => setMobileMenuOpen(false)}>
               <Button variant="ghost" className="w-full justify-start" data-testid="link-mobile-quote">
                 Get Quote
