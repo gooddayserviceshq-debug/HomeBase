@@ -95,8 +95,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes - Referenced from Replit Auth blueprint
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
+      // Defensive check for claims
+      if (!req.user?.claims?.sub) {
+        console.error("User claims missing from session");
+        return res.status(401).json({ message: "Unauthorized - claims missing" });
+      }
+      
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
+      
+      if (!user) {
+        console.error(`User not found in storage: ${userId}`);
+        return res.status(404).json({ message: "User not found" });
+      }
+      
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
