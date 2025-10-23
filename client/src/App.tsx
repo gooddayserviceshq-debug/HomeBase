@@ -6,18 +6,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/header";
 import Home from "@/pages/home";
-import Book from "@/pages/book";
-import CustomerDashboard from "@/pages/customer-dashboard";
-import AdminDashboard from "@/pages/admin-dashboard";
+import Quote from "@/pages/quote";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/book" component={Book} />
-      <Route path="/customer" component={CustomerDashboard} />
-      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/quote" component={Quote} />
       <Route component={NotFound} />
     </Switch>
   );

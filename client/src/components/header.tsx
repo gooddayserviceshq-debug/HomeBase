@@ -29,18 +29,15 @@ export function Header() {
             <Link href="/" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/" ? "text-foreground" : "text-muted-foreground"}`}>
               Home
             </Link>
-            <Link href="/book" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/book" ? "text-foreground" : "text-muted-foreground"}`}>
-              Book Service
-            </Link>
-            <Link href="/customer" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/customer" ? "text-foreground" : "text-muted-foreground"}`}>
-              My Appointments
-            </Link>
+            <a href="#services" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+              Services
+            </a>
           </nav>
 
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button asChild size="default" className="hidden md:flex" data-testid="button-book-now">
-              <Link href="/book">Book Now</Link>
+            <Button asChild size="default" className="hidden md:flex" data-testid="button-get-quote">
+              <Link href="/quote">Get Quote</Link>
             </Button>
             
             <Button
@@ -64,14 +61,14 @@ export function Header() {
                 Home
               </Button>
             </Link>
-            <Link href="/book" onClick={() => setMobileMenuOpen(false)}>
-              <Button variant="ghost" className="w-full justify-start" data-testid="link-mobile-book">
-                Book Service
+            <a href="#services" onClick={() => setMobileMenuOpen(false)}>
+              <Button variant="ghost" className="w-full justify-start" data-testid="link-mobile-services">
+                Services
               </Button>
-            </Link>
-            <Link href="/customer" onClick={() => setMobileMenuOpen(false)}>
-              <Button variant="ghost" className="w-full justify-start" data-testid="link-mobile-appointments">
-                My Appointments
+            </a>
+            <Link href="/quote" onClick={() => setMobileMenuOpen(false)}>
+              <Button variant="ghost" className="w-full justify-start" data-testid="link-mobile-quote">
+                Get Quote
               </Button>
             </Link>
           </nav>
