@@ -201,6 +201,139 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Product routes
+  app.get("/api/products", async (req, res) => {
+    try {
+      const categoryId = req.query.categoryId as string;
+      const products = await storage.getProducts(categoryId);
+      res.json(products);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch products" });
+    }
+  });
+
+  app.get("/api/products/:slug", async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const product = await storage.getProductBySlug(slug);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      res.json(product);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch product" });
+    }
+  });
+
+  // Category routes
+  app.get("/api/categories", async (_req, res) => {
+    try {
+      const categories = await storage.getCategories();
+      res.json(categories);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch categories" });
+    }
+  });
+
+  // Cart routes
+  app.get("/api/cart", async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const sessionId = req.sessionID;
+      const items = await storage.getCartItems(userId, sessionId);
+      res.json(items);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch cart" });
+    }
+  });
+
+  app.post("/api/cart", async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const sessionId = req.sessionID;
+      const { productId, quantity = 1 } = req.body;
+      
+      if (!productId) {
+        return res.status(400).json({ error: "Product ID required" });
+      }
+      
+      const item = await storage.addToCart({
+        userId,
+        sessionId,
+        productId,
+        quantity,
+      });
+      res.json(item);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to add to cart" });
+    }
+  });
+
+  app.patch("/api/cart/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { quantity } = req.body;
+      
+      if (quantity <= 0) {
+        await storage.removeFromCart(id);
+        res.json({ removed: true });
+      } else {
+        const item = await storage.updateCartItemQuantity(id, quantity);
+        if (!item) {
+          return res.status(404).json({ error: "Cart item not found" });
+        }
+        res.json(item);
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update cart" });
+    }
+  });
+
+  app.delete("/api/cart/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.removeFromCart(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to remove from cart" });
+    }
+  });
+
+  // Document routes
+  app.get("/api/documents", async (req, res) => {
+    try {
+      const category = req.query.category as string;
+      const documents = await storage.getDocuments(category);
+      res.json(documents);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch documents" });
+    }
+  });
+
+  app.get("/api/documents/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const document = await storage.getDocument(id);
+      if (!document) {
+        return res.status(404).json({ error: "Document not found" });
+      }
+      res.json(document);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch document" });
+    }
+  });
+
+  // Warranty routes
+  app.get("/api/warranties", async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const warranties = await storage.getWarranties(userId);
+      res.json(warranties);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch warranties" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
