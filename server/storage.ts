@@ -17,6 +17,8 @@ import {
   type InsertWarranty,
   type Document,
   type InsertDocument,
+  type PropertyCleaningQuote,
+  type InsertPropertyCleaningQuote,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -71,6 +73,15 @@ export interface IStorage {
   getDocuments(category?: string): Promise<Document[]>;
   getDocument(id: string): Promise<Document | undefined>;
   createDocument(document: InsertDocument): Promise<Document>;
+  
+  // Property Cleaning Quote operations
+  getPropertyCleaningQuotes(): Promise<PropertyCleaningQuote[]>;
+  getPropertyCleaningQuote(id: string): Promise<PropertyCleaningQuote | undefined>;
+  createPropertyCleaningQuote(quote: InsertPropertyCleaningQuote, calculatedData: {
+    itemizedTotal: string;
+    minimumApplied: boolean;
+    finalTotal: string;
+  }): Promise<PropertyCleaningQuote>;
 }
 
 export class MemStorage implements IStorage {
@@ -83,6 +94,7 @@ export class MemStorage implements IStorage {
   private orderItems: Map<string, OrderItem>;
   private warranties: Map<string, Warranty>;
   private documents: Map<string, Document>;
+  private propertyCleaningQuotes: Map<string, PropertyCleaningQuote>;
 
   constructor() {
     this.quoteRequests = new Map();
@@ -94,6 +106,7 @@ export class MemStorage implements IStorage {
     this.orderItems = new Map();
     this.warranties = new Map();
     this.documents = new Map();
+    this.propertyCleaningQuotes = new Map();
     
     // Initialize with sample products
     this.initializeSampleData();
@@ -641,6 +654,48 @@ export class MemStorage implements IStorage {
     };
     this.documents.set(id, newDocument);
     return newDocument;
+  }
+
+  // Property Cleaning Quote operations
+  async getPropertyCleaningQuotes(): Promise<PropertyCleaningQuote[]> {
+    const quotes = Array.from(this.propertyCleaningQuotes.values());
+    return quotes.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getPropertyCleaningQuote(id: string): Promise<PropertyCleaningQuote | undefined> {
+    return this.propertyCleaningQuotes.get(id);
+  }
+
+  async createPropertyCleaningQuote(
+    quote: InsertPropertyCleaningQuote,
+    calculatedData: {
+      itemizedTotal: string;
+      minimumApplied: boolean;
+      finalTotal: string;
+    }
+  ): Promise<PropertyCleaningQuote> {
+    const id = randomUUID();
+    const now = new Date();
+    
+    const newQuote: PropertyCleaningQuote = {
+      ...quote,
+      id,
+      driveway: quote.driveway ?? false,
+      roof: quote.roof ?? false,
+      siding: quote.siding ?? false,
+      gutters: quote.gutters ?? false,
+      fenceSides: quote.fenceSides ?? 0,
+      fencePricePerSide: String(quote.fencePricePerSide ?? 75),
+      itemizedTotal: calculatedData.itemizedTotal,
+      minimumApplied: calculatedData.minimumApplied,
+      finalTotal: calculatedData.finalTotal,
+      additionalNotes: quote.additionalNotes ?? null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    
+    this.propertyCleaningQuotes.set(id, newQuote);
+    return newQuote;
   }
 }
 

@@ -7,8 +7,11 @@ import { z } from "zod";
 import { 
   quoteCalculationSchema,
   insertQuoteRequestSchema,
+  propertyCleaningCalculationSchema,
+  cleaningServicePrices,
   type QuoteResponse,
-  type QuoteTiers
+  type QuoteTiers,
+  insertProductSchema,
 } from "@shared/schema";
 
 const BASE_RATES = {
@@ -198,6 +201,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(quote);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch quote request" });
+    }
+  });
+
+  // Property Cleaning Quote endpoints
+  app.post("/api/property-cleaning/calculate", async (req, res) => {
+    try {
+      const data = propertyCleaningCalculationSchema.parse(req.body);
+      
+      let itemizedTotal = 0;
+      const breakdown = [];
+      
+      // Calculate itemized costs
+      if (data.driveway) {
+        itemizedTotal += cleaningServicePrices.driveway;
+        breakdown.push({ service: "Driveway Cleaning", price: cleaningServicePrices.driveway });
+      }
+      if (data.roof) {
+        itemizedTotal += cleaningServicePrices.roof;
+        breakdown.push({ service: "Roof Cleaning", price: cleaningServicePrices.roof });
+      }
+      if (data.siding) {
+        itemizedTotal += cleaningServicePrices.siding;
+        breakdown.push({ service: "House Siding", price: cleaningServicePrices.siding });
+      }
+      if (data.gutters) {
+        itemizedTotal += cleaningServicePrices.gutters;
+        breakdown.push({ service: "Gutters Cleaning", price: cleaningServicePrices.gutters });
+      }
+      if (data.fenceSides > 0) {
+        const fencePrice = data.fencePricePerSide * data.fenceSides;
+        itemizedTotal += fencePrice;
+        breakdown.push({ 
+          service: `Fence Cleaning (${data.fenceSides} ${data.fenceSides === 1 ? 'side' : 'sides'})`, 
+          price: fencePrice 
+        });
+      }
+      
+      // Apply minimum service charge if needed
+      const minimumApplied = itemizedTotal < cleaningServicePrices.minimumService;
+      const finalTotal = Math.max(itemizedTotal, cleaningServicePrices.minimumService);
+      
+      res.json({
+        breakdown,
+        itemizedTotal,
+        minimumServiceCharge: cleaningServicePrices.minimumService,
+        minimumApplied,
+        finalTotal,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid calculation data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to calculate property cleaning quote" });
+    }
+  });
+
+  app.post("/api/property-cleaning/submit", async (req, res) => {
+    try {
+      const { customerInfo, services } = req.body;
+      
+      // Validate customer info
+      const customerSchema = z.object({
+        customerName: z.string().min(2),
+        customerEmail: z.string().email(),
+        customerPhone: z.string().min(10),
+        propertyAddress: z.string().min(10),
+        additionalNotes: z.string().optional(),
+      });
+      
+      const validatedCustomer = customerSchema.parse(customerInfo);
+      const validatedServices = propertyCleaningCalculationSchema.parse(services);
+      
+      // Calculate totals
+      let itemizedTotal = 0;
+      if (validatedServices.driveway) itemizedTotal += cleaningServicePrices.driveway;
+      if (validatedServices.roof) itemizedTotal += cleaningServicePrices.roof;
+      if (validatedServices.siding) itemizedTotal += cleaningServicePrices.siding;
+      if (validatedServices.gutters) itemizedTotal += cleaningServicePrices.gutters;
+      if (validatedServices.fenceSides > 0) {
+        itemizedTotal += validatedServices.fencePricePerSide * validatedServices.fenceSides;
+      }
+      
+      const minimumApplied = itemizedTotal < cleaningServicePrices.minimumService;
+      const finalTotal = Math.max(itemizedTotal, cleaningServicePrices.minimumService);
+      
+      // Create quote
+      const quote = await storage.createPropertyCleaningQuote(
+        {
+          ...validatedCustomer,
+          ...validatedServices,
+        },
+        {
+          itemizedTotal: itemizedTotal.toFixed(2),
+          minimumApplied,
+          finalTotal: finalTotal.toFixed(2),
+        }
+      );
+      
+      res.json({ success: true, quoteId: quote.id, quote });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid quote data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to submit property cleaning quote" });
+    }
+  });
+
+  app.get("/api/property-cleaning/quotes", async (_req, res) => {
+    try {
+      const quotes = await storage.getPropertyCleaningQuotes();
+      res.json(quotes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch property cleaning quotes" });
+    }
+  });
+
+  app.get("/api/property-cleaning/quotes/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const quote = await storage.getPropertyCleaningQuote(id);
+      
+      if (!quote) {
+        return res.status(404).json({ error: "Property cleaning quote not found" });
+      }
+      
+      res.json(quote);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch property cleaning quote" });
     }
   });
 

@@ -289,3 +289,68 @@ export type InsertWarranty = z.infer<typeof insertWarrantySchema>;
 
 export type Document = typeof documents.$inferSelect;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
+
+// Property Cleaning Quote Schema
+export const propertyCleaningQuotes = pgTable("property_cleaning_quotes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerName: text("customer_name").notNull(),
+  customerEmail: text("customer_email").notNull(),
+  customerPhone: text("customer_phone").notNull(),
+  propertyAddress: text("property_address").notNull(),
+  
+  // Service selections
+  driveway: boolean("driveway").notNull().default(false),
+  roof: boolean("roof").notNull().default(false),
+  siding: boolean("siding").notNull().default(false),
+  gutters: boolean("gutters").notNull().default(false),
+  fenceSides: integer("fence_sides").notNull().default(0), // 0-4 sides
+  fencePricePerSide: decimal("fence_price_per_side", { precision: 10, scale: 2 }).notNull().default("75"), // $75 or $150
+  
+  // Pricing
+  itemizedTotal: decimal("itemized_total", { precision: 10, scale: 2 }).notNull(),
+  minimumApplied: boolean("minimum_applied").notNull().default(false),
+  finalTotal: decimal("final_total", { precision: 10, scale: 2 }).notNull(),
+  
+  // Notes
+  additionalNotes: text("additional_notes"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Property Cleaning Service Prices (for reference/configuration)
+export const cleaningServicePrices = {
+  driveway: 300,
+  roof: 300,
+  siding: 300,
+  gutters: 300,
+  fenceSmall: 75,  // Per side for small fence
+  fenceLarge: 150, // Per side for large fence
+  minimumService: 975,
+};
+
+// Insert schema for property cleaning quotes
+export const insertPropertyCleaningQuoteSchema = createInsertSchema(propertyCleaningQuotes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  itemizedTotal: true,
+  minimumApplied: true,
+  finalTotal: true,
+});
+
+// Type exports
+export type PropertyCleaningQuote = typeof propertyCleaningQuotes.$inferSelect;
+export type InsertPropertyCleaningQuote = z.infer<typeof insertPropertyCleaningQuoteSchema>;
+
+// Validation schema for API endpoint
+export const propertyCleaningCalculationSchema = z.object({
+  driveway: z.boolean().default(false),
+  roof: z.boolean().default(false),
+  siding: z.boolean().default(false),
+  gutters: z.boolean().default(false),
+  fenceSides: z.number().min(0).max(4).default(0),
+  fencePricePerSide: z.number().min(75).max(150).default(75),
+});
+
+export type PropertyCleaningCalculation = z.infer<typeof propertyCleaningCalculationSchema>;

@@ -7,6 +7,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/header";
 import Home from "@/pages/home";
 import Quote from "@/pages/quote";
+import QuoteSelector from "@/pages/quote-selector";
+import PropertyCleaningQuote from "@/pages/property-cleaning-quote";
 import Products from "@/pages/products";
 import Checkout from "@/pages/checkout";
 import Documents from "@/pages/documents";
@@ -18,7 +20,9 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/quote" component={Quote} />
+      <Route path="/quote" component={QuoteSelector} />
+      <Route path="/quote/restoration" component={Quote} />
+      <Route path="/property-cleaning" component={PropertyCleaningQuote} />
       <Route path="/products" component={Products} />
       <Route path="/checkout" component={Checkout} />
       <Route path="/documents" component={Documents} />
