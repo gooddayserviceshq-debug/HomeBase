@@ -19,6 +19,55 @@ const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
 
+// Generic email sending function
+export async function sendEmail({
+  to,
+  subject,
+  text,
+  html
+}: {
+  to: string;
+  subject: string;
+  text: string;
+  html?: string;
+}): Promise<{ success: boolean; message: string }> {
+  if (SENDGRID_API_KEY) {
+    try {
+      const sgMail = require("@sendgrid/mail");
+      sgMail.setApiKey(SENDGRID_API_KEY);
+      
+      const msg = {
+        to,
+        from: {
+          email: SENDGRID_FROM_EMAIL,
+          name: SENDGRID_FROM_NAME
+        },
+        subject,
+        text,
+        html: html || text,
+      };
+      
+      await sgMail.send(msg);
+      return { success: true, message: "Email sent successfully via SendGrid" };
+    } catch (error: any) {
+      console.error("SendGrid error:", error);
+      return { success: false, message: `Failed to send email: ${error.message}` };
+    }
+  } else {
+    // Fallback to console logging for development
+    console.log("=== EMAIL ===");
+    console.log("To:", to);
+    console.log("Subject:", subject);
+    console.log("Text:", text);
+    console.log("==============");
+    
+    return { 
+      success: true, 
+      message: "Email logged to console (SendGrid not configured)" 
+    };
+  }
+}
+
 export async function sendPropertyCleaningQuoteEmail(
   quote: PropertyCleaningQuote,
   recipientEmail: string

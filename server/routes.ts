@@ -3,6 +3,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { sendEmail } from "./sendEmail";
 import { z } from "zod";
 import { 
   quoteCalculationSchema,
@@ -618,11 +619,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const inquiry = await storage.createCustomerInquiry(validatedData);
       
       // Send email notification to admin (optional)
-      if (sendEmail) {
-        await sendEmail({
-          to: "admin@gooddayservices.com",
-          subject: `New Customer Inquiry: ${validatedData.inquiryType}`,
-          text: `
+      try {
+        if (sendEmail && process.env.SENDGRID_API_KEY) {
+          await sendEmail({
+            to: "admin@gooddayservices.com",
+            subject: `New Customer Inquiry: ${validatedData.inquiryType}`,
+            text: `
 New customer inquiry received:
 
 Name: ${validatedData.name}
@@ -633,8 +635,12 @@ Subject: ${validatedData.subject || "N/A"}
 
 Message:
 ${validatedData.message}
-          `,
-        });
+            `,
+          });
+        }
+      } catch (emailError) {
+        // Log error but don't fail the inquiry submission
+        console.error("Failed to send email notification:", emailError);
       }
       
       res.json({
