@@ -19,6 +19,8 @@ import {
   type InsertDocument,
   type PropertyCleaningQuote,
   type InsertPropertyCleaningQuote,
+  type CustomerInquiry,
+  type InsertCustomerInquiry,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -83,6 +85,11 @@ export interface IStorage {
     minimumApplied: boolean;
     finalTotal: string;
   }): Promise<PropertyCleaningQuote>;
+
+  // Customer Inquiry operations
+  getCustomerInquiries(): Promise<CustomerInquiry[]>;
+  getCustomerInquiry(id: string): Promise<CustomerInquiry | undefined>;
+  createCustomerInquiry(inquiry: InsertCustomerInquiry): Promise<CustomerInquiry>;
 }
 
 export class MemStorage implements IStorage {
@@ -96,6 +103,7 @@ export class MemStorage implements IStorage {
   private warranties: Map<string, Warranty>;
   private documents: Map<string, Document>;
   private propertyCleaningQuotes: Map<string, PropertyCleaningQuote>;
+  private customerInquiries: Map<string, CustomerInquiry>;
 
   constructor() {
     this.quoteRequests = new Map();
@@ -108,6 +116,7 @@ export class MemStorage implements IStorage {
     this.warranties = new Map();
     this.documents = new Map();
     this.propertyCleaningQuotes = new Map();
+    this.customerInquiries = new Map();
     
     // Initialize with sample products
     this.initializeSampleData();
@@ -704,6 +713,34 @@ export class MemStorage implements IStorage {
     
     this.propertyCleaningQuotes.set(id, newQuote);
     return newQuote;
+  }
+
+  // Customer Inquiry operations
+  async getCustomerInquiries(): Promise<CustomerInquiry[]> {
+    const inquiries = Array.from(this.customerInquiries.values());
+    return inquiries.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getCustomerInquiry(id: string): Promise<CustomerInquiry | undefined> {
+    return this.customerInquiries.get(id);
+  }
+
+  async createCustomerInquiry(inquiry: InsertCustomerInquiry): Promise<CustomerInquiry> {
+    const id = randomUUID();
+    const now = new Date();
+    
+    const newInquiry: CustomerInquiry = {
+      ...inquiry,
+      id,
+      inquiryType: inquiry.inquiryType as "quote" | "support" | "general" | "other",
+      status: "new",
+      subject: inquiry.subject ?? "",
+      createdAt: now,
+      updatedAt: now,
+    };
+    
+    this.customerInquiries.set(id, newInquiry);
+    return newInquiry;
   }
 }
 

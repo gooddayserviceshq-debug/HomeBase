@@ -354,3 +354,29 @@ export const propertyCleaningCalculationSchema = z.object({
 });
 
 export type PropertyCleaningCalculation = z.infer<typeof propertyCleaningCalculationSchema>;
+
+// Customer Inquiry Schema
+export const customerInquiries = pgTable("customer_inquiries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone").notNull(),
+  inquiryType: text("inquiry_type", { enum: ["quote", "support", "general", "other"] }).notNull(),
+  subject: text("subject").notNull().default(""),
+  message: text("message").notNull(),
+  status: text("status", { enum: ["new", "in-progress", "resolved"] }).notNull().default("new"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Insert schema for customer inquiries
+export const insertCustomerInquirySchema = createInsertSchema(customerInquiries).omit({
+  id: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Type exports
+export type CustomerInquiry = typeof customerInquiries.$inferSelect;
+export type InsertCustomerInquiry = z.infer<typeof insertCustomerInquirySchema>;

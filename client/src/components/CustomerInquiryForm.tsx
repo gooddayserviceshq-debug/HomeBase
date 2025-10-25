@@ -50,16 +50,24 @@ export function CustomerInquiryForm() {
 
   const submitInquiryMutation = useMutation({
     mutationFn: async (data: InquiryFormValues) => {
-      // For now, we'll log the inquiry and show a success message
-      // In production, this would send to a backend endpoint
-      console.log("Customer Inquiry:", data);
-      
-      // Simulate API call
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({ success: true });
-        }, 1000);
+      const response = await fetch("/api/contact/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...data,
+          inquiryType: data.inquiryType === "service" ? "support" :
+                       data.inquiryType === "schedule" ? "support" :
+                       data.inquiryType === "billing" ? "support" : 
+                       data.inquiryType
+        }),
       });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to submit inquiry");
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       toast({

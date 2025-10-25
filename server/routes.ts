@@ -601,6 +601,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Customer Inquiry routes
+  app.post("/api/contact/inquiries", async (req, res) => {
+    try {
+      const inquirySchema = z.object({
+        name: z.string().min(2, "Name must be at least 2 characters"),
+        email: z.string().email("Invalid email address"),
+        phone: z.string().min(10, "Phone number must be at least 10 digits"),
+        inquiryType: z.enum(["quote", "support", "general", "other"]),
+        subject: z.string().optional(),
+        message: z.string().min(10, "Message must be at least 10 characters"),
+      });
+
+      const validatedData = inquirySchema.parse(req.body);
+      
+      const inquiry = await storage.createCustomerInquiry(validatedData);
+      
+      // Send email notification to admin (optional)
+      if (sendEmail) {
+        await sendEmail({
+          to: "admin@gooddayservices.com",
+          subject: `New Customer Inquiry: ${validatedData.inquiryType}`,
+          text: `
+New customer inquiry received:
+
+Name: ${validatedData.name}
+Email: ${validatedData.email}
+Phone: ${validatedData.phone}
+Type: ${validatedData.inquiryType}
+Subject: ${validatedData.subject || "N/A"}
+
+Message:
+${validatedData.message}
+          `,
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: "Your inquiry has been submitted successfully. We'll respond within 24 hours.",
+        inquiryId: inquiry.id,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "Invalid inquiry data", 
+          details: error.errors 
+        });
+      }
+      console.error("Failed to submit inquiry:", error);
+      res.status(500).json({ error: "Failed to submit inquiry" });
+    }
+  });
+
+  app.get("/api/admin/inquiries", isAuthenticated, async (req: any, res) => {
+    try {
+      const inquiries = await storage.getCustomerInquiries();
+      res.json(inquiries);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch inquiries" });
+    }
+  });
+
   // Admin routes - Protected with authentication
   app.get("/api/admin/stats", isAuthenticated, async (req: any, res) => {
     try {
