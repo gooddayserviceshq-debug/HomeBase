@@ -333,6 +333,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Email and SMS routes for sending quotes
+  app.post("/api/send-quote/email", async (req, res) => {
+    try {
+      const { quoteId, quoteType, recipientEmail } = req.body;
+      
+      if (!quoteId || !quoteType || !recipientEmail) {
+        return res.status(400).json({ 
+          error: "Missing required fields: quoteId, quoteType, recipientEmail" 
+        });
+      }
+      
+      const { 
+        sendPropertyCleaningQuoteEmail,
+        sendRestorationQuoteEmail 
+      } = await import("./sendEmail");
+      
+      if (quoteType === "cleaning") {
+        const quote = await storage.getPropertyCleaningQuote(quoteId);
+        if (!quote) {
+          return res.status(404).json({ error: "Property cleaning quote not found" });
+        }
+        
+        const result = await sendPropertyCleaningQuoteEmail(quote, recipientEmail);
+        res.json(result);
+      } else if (quoteType === "restoration") {
+        const quote = await storage.getQuoteRequest(quoteId);
+        if (!quote) {
+          return res.status(404).json({ error: "Restoration quote not found" });
+        }
+        
+        const result = await sendRestorationQuoteEmail(quote, recipientEmail);
+        res.json(result);
+      } else {
+        res.status(400).json({ error: "Invalid quote type. Must be 'cleaning' or 'restoration'" });
+      }
+    } catch (error) {
+      console.error("Email send error:", error);
+      res.status(500).json({ error: "Failed to send email" });
+    }
+  });
+
+  app.post("/api/send-quote/sms", async (req, res) => {
+    try {
+      const { quoteId, quoteType, recipientPhone } = req.body;
+      
+      if (!quoteId || !quoteType || !recipientPhone) {
+        return res.status(400).json({ 
+          error: "Missing required fields: quoteId, quoteType, recipientPhone" 
+        });
+      }
+      
+      const { 
+        sendPropertyCleaningQuoteSMS,
+        sendRestorationQuoteSMS 
+      } = await import("./sendEmail");
+      
+      if (quoteType === "cleaning") {
+        const quote = await storage.getPropertyCleaningQuote(quoteId);
+        if (!quote) {
+          return res.status(404).json({ error: "Property cleaning quote not found" });
+        }
+        
+        const result = await sendPropertyCleaningQuoteSMS(quote, recipientPhone);
+        res.json(result);
+      } else if (quoteType === "restoration") {
+        const quote = await storage.getQuoteRequest(quoteId);
+        if (!quote) {
+          return res.status(404).json({ error: "Restoration quote not found" });
+        }
+        
+        const result = await sendRestorationQuoteSMS(quote, recipientPhone);
+        res.json(result);
+      } else {
+        res.status(400).json({ error: "Invalid quote type. Must be 'cleaning' or 'restoration'" });
+      }
+    } catch (error) {
+      console.error("SMS send error:", error);
+      res.status(500).json({ error: "Failed to send SMS" });
+    }
+  });
+
   // Product routes
   app.get("/api/products", async (req, res) => {
     try {
