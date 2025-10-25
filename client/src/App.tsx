@@ -13,6 +13,7 @@ import Products from "@/pages/products";
 import Checkout from "@/pages/checkout";
 import Documents from "@/pages/documents";
 import Warranties from "@/pages/warranties";
+import Contact from "@/pages/Contact";
 import AdminDashboard from "@/pages/admin/dashboard";
 import NotFound from "@/pages/not-found";
 
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/checkout" component={Checkout} />
       <Route path="/documents" component={Documents} />
       <Route path="/warranties" component={Warranties} />
+      <Route path="/contact" component={Contact} />
       <Route path="/admin" component={AdminDashboard} />
       <Route component={NotFound} />
     </Switch>
