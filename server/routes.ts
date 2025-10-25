@@ -291,6 +291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         {
           ...validatedCustomer,
           ...validatedServices,
+          fencePricePerSide: String(validatedServices.fencePricePerSide),
         },
         {
           itemizedTotal: itemizedTotal.toFixed(2),

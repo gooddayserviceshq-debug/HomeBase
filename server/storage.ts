@@ -49,6 +49,7 @@ export interface IStorage {
   getProductBySlug(slug: string): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: string, product: Partial<InsertProduct>): Promise<Product | undefined>;
+  deleteProduct(id: string): Promise<void>;
   
   // Cart operations
   getCartItems(userId?: string, sessionId?: string): Promise<(CartItem & { product: Product })[]>;
@@ -177,7 +178,7 @@ export class MemStorage implements IStorage {
           "Dry Time": "2-4 hours",
           "Recoat Time": "24 hours",
           "VOC Content": "< 100 g/L",
-        },
+        } as Record<string, string>,
         featured: true,
         active: true,
         createdAt: new Date(),
@@ -203,7 +204,7 @@ export class MemStorage implements IStorage {
           "Protection": "5-7 years",
           "Penetration": "Up to 4mm",
           "VOC Content": "< 400 g/L",
-        },
+        } as Record<string, string>,
         featured: true,
         active: true,
         createdAt: new Date(),
@@ -228,7 +229,7 @@ export class MemStorage implements IStorage {
           "Coverage": "500 sq ft per gallon (diluted)",
           "pH Level": "12.5",
           "Biodegradable": "Yes",
-        },
+        } as Record<string, string>,
         featured: false,
         active: true,
         createdAt: new Date(),
@@ -254,7 +255,7 @@ export class MemStorage implements IStorage {
           "Joint Width": "1/8\" to 1\"",
           "Set Time": "24 hours",
           "Color": "Gray",
-        },
+        } as Record<string, string>,
         featured: false,
         active: true,
         createdAt: new Date(),
@@ -279,7 +280,7 @@ export class MemStorage implements IStorage {
           "Pole Length": "4-8 ft adjustable",
           "Material": "Professional-grade microfiber",
           "Includes": "Roller, pole, tray, gloves, safety glasses",
-        },
+        } as Record<string, string>,
         featured: false,
         active: true,
         createdAt: new Date(),
@@ -432,7 +433,7 @@ export class MemStorage implements IStorage {
       compareAtPrice: product.compareAtPrice ?? null,
       sku: product.sku ?? null,
       imageUrl: product.imageUrl ?? null,
-      additionalImages: product.additionalImages ?? [],
+      additionalImages: (product.additionalImages ?? []) as string[],
       specifications: product.specifications ?? {},
       featured: product.featured ?? false,
       active: product.active ?? true,
@@ -452,10 +453,17 @@ export class MemStorage implements IStorage {
     const updated: Product = {
       ...existing,
       ...product,
+      additionalImages: product.additionalImages 
+        ? (product.additionalImages as string[])
+        : existing.additionalImages,
       updatedAt: new Date(),
     };
     this.products.set(id, updated);
     return updated;
+  }
+
+  async deleteProduct(id: string): Promise<void> {
+    this.products.delete(id);
   }
 
   // Cart operations
