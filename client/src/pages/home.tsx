@@ -8,6 +8,8 @@ import { useState, useEffect, useRef } from "react";
 import { Slider } from "@/components/ui/slider";
 import BeforeImage from '@assets/stock_images/dirty_stained_weathe_074e60af.jpg';
 import AfterImage from '@assets/stock_images/clean_restored_concr_47aaa0e2.jpg';
+import PatioImage from '@assets/stock_images/patio_pavers_outdoor_ee2162b8.jpg';
+import WalkwayImage from '@assets/stock_images/brick_walkway_pathwa_409e0845.jpg';
 
 export default function Home() {
   const [scrollY, setScrollY] = useState(0);
@@ -259,17 +261,22 @@ export default function Home() {
           {/* Project Gallery */}
           <div className="grid md:grid-cols-3 gap-4">
             {[
-              { type: "Driveway", location: "Franklin", size: "2,800 sq ft" },
-              { type: "Patio", location: "Brentwood", size: "1,200 sq ft" },
-              { type: "Walkway", location: "Spring Hill", size: "800 sq ft" }
+              { type: "Driveway", location: "Franklin", size: "2,800 sq ft", image: AfterImage },
+              { type: "Patio", location: "Brentwood", size: "1,200 sq ft", image: PatioImage },
+              { type: "Walkway", location: "Spring Hill", size: "800 sq ft", image: WalkwayImage }
             ].map((project, index) => (
-              <Card key={index} className="overflow-hidden group cursor-pointer" onClick={() => setSelectedProject(index)}>
-                <div className="relative aspect-video bg-muted">
-                  <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-                  <div className="absolute bottom-3 left-3">
-                    <Badge variant="secondary" className="mb-1">Completed</Badge>
-                    <p className="text-sm font-medium text-white">{project.type} Restoration</p>
-                    <p className="text-xs text-white/80">{project.location} • {project.size}</p>
+              <Card key={index} className="overflow-hidden group cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-xl" onClick={() => setSelectedProject(index)}>
+                <div className="relative aspect-video">
+                  <img 
+                    src={project.image} 
+                    alt={`${project.type} restoration project`}
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                  <div className="absolute bottom-3 left-3 right-3">
+                    <Badge variant="secondary" className="mb-2">Completed</Badge>
+                    <p className="text-sm font-semibold text-white">{project.type} Restoration</p>
+                    <p className="text-xs text-white/90">{project.location} • {project.size}</p>
                   </div>
                 </div>
               </Card>
