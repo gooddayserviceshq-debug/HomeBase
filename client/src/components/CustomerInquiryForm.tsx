@@ -79,7 +79,7 @@ export function CustomerInquiryForm() {
     onError: () => {
       toast({
         title: "Failed to Send Inquiry",
-        description: "Please try again or call us directly at (615) 555-0123",
+        description: "Please try again or call us directly at 615-390-9779",
         variant: "destructive",
       });
     },
@@ -106,7 +106,7 @@ export function CustomerInquiryForm() {
                 <Phone className="mt-1 h-5 w-5 text-primary" />
                 <div>
                   <p className="font-medium">Call Us</p>
-                  <p className="text-sm text-muted-foreground">(615) 555-0123</p>
+                  <p className="text-sm text-muted-foreground">615-390-9779</p>
                   <p className="text-xs text-muted-foreground">Mon-Fri 8am-6pm, Sat 9am-4pm</p>
                 </div>
               </div>
@@ -115,7 +115,7 @@ export function CustomerInquiryForm() {
                 <Mail className="mt-1 h-5 w-5 text-primary" />
                 <div>
                   <p className="font-medium">Email Us</p>
-                  <p className="text-sm text-muted-foreground">info@gooddayservices.com</p>
+                  <p className="text-sm text-muted-foreground">GoodDayServicesHQ@gmail.com</p>
                   <p className="text-xs text-muted-foreground">We respond within 24 hours</p>
                 </div>
               </div>
@@ -124,7 +124,7 @@ export function CustomerInquiryForm() {
                 <MessageCircle className="mt-1 h-5 w-5 text-primary" />
                 <div>
                   <p className="font-medium">Text Us</p>
-                  <p className="text-sm text-muted-foreground">(615) 555-0123</p>
+                  <p className="text-sm text-muted-foreground">615-390-9779</p>
                   <p className="text-xs text-muted-foreground">Text for quick questions</p>
                 </div>
               </div>
