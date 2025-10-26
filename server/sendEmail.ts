@@ -11,7 +11,7 @@ import type { PropertyCleaningQuote, QuoteRequest } from "@shared/schema";
 
 // Check if SendGrid is configured
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || "quotes@gooddayservices.com";
+const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || "GoodDayServicesHQ@gmail.com";
 const SENDGRID_FROM_NAME = process.env.SENDGRID_FROM_NAME || "Good Day Services";
 
 // Twilio configuration

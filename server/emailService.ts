@@ -9,7 +9,7 @@ interface EmailConfig {
 }
 
 const emailConfig: EmailConfig = {
-  from: process.env.SENDGRID_FROM_EMAIL || "quotes@gooddayservices.com",
+  from: process.env.SENDGRID_FROM_EMAIL || "GoodDayServicesHQ@gmail.com",
   fromName: "Good Day Services"
 };
 
