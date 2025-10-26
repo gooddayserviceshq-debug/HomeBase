@@ -2,10 +2,12 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Shield, Clock, Award, ArrowRight, Play, Star, Users, Sparkles, ChevronRight, Phone, MapPin, Building2 } from "lucide-react";
+import { CheckCircle2, Shield, Clock, Award, ArrowRight, Play, Star, Users, Sparkles, ChevronRight, ChevronLeft, Phone, MapPin, Building2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState, useEffect, useRef } from "react";
 import { Slider } from "@/components/ui/slider";
+import BeforeImage from '@assets/stock_images/dirty_stained_weathe_074e60af.jpg';
+import AfterImage from '@assets/stock_images/clean_restored_concr_47aaa0e2.jpg';
 
 export default function Home() {
   const [scrollY, setScrollY] = useState(0);
@@ -176,28 +178,41 @@ export default function Home() {
             <div className="relative overflow-hidden rounded-xl bg-muted aspect-video">
               {/* Before/After Slider Container */}
               <div className="relative w-full h-full">
-                <div className="absolute inset-0 bg-gradient-to-br from-destructive/20 to-destructive/10 flex items-center justify-center">
-                  <div className="text-center">
-                    <Badge variant="destructive" className="mb-2">Before</Badge>
-                    <p className="text-sm text-muted-foreground">Stained & Weathered</p>
-                  </div>
+                {/* Before Image */}
+                <img 
+                  src={BeforeImage} 
+                  alt="Before restoration" 
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                {/* Before Label */}
+                <div className="absolute top-4 left-4 z-10">
+                  <Badge variant="destructive" className="shadow-lg">Before</Badge>
                 </div>
+                
+                {/* After Image with Clip Path */}
                 <div 
-                  className="absolute inset-0 bg-gradient-to-br from-green-500/20 to-green-600/10 flex items-center justify-center overflow-hidden"
+                  className="absolute inset-0 overflow-hidden"
                   style={{ clipPath: `inset(0 ${100 - beforeAfterSlider[0]}% 0 0)` }}
                 >
-                  <div className="text-center">
-                    <Badge className="mb-2 bg-green-600">After</Badge>
-                    <p className="text-sm text-muted-foreground">Restored & Protected</p>
+                  <img 
+                    src={AfterImage} 
+                    alt="After restoration" 
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  {/* After Label */}
+                  <div className="absolute top-4 right-4">
+                    <Badge className="bg-green-600 shadow-lg">After</Badge>
                   </div>
                 </div>
+                
                 {/* Slider Handle */}
                 <div 
-                  className="absolute top-0 bottom-0 w-1 bg-white shadow-xl cursor-ew-resize"
+                  className="absolute top-0 bottom-0 w-1 bg-white shadow-xl cursor-ew-resize transition-none"
                   style={{ left: `${beforeAfterSlider[0]}%` }}
                 >
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center">
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center">
+                    <ChevronLeft className="absolute h-4 w-4 text-muted-foreground -left-[2px]" />
+                    <ChevronRight className="absolute h-4 w-4 text-muted-foreground -right-[2px]" />
                   </div>
                 </div>
               </div>
