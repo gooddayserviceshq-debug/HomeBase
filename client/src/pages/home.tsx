@@ -16,6 +16,8 @@ export default function Home() {
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [beforeAfterSlider, setBeforeAfterSlider] = useState([50]);
   const [selectedProject, setSelectedProject] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const sliderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -29,6 +31,34 @@ export default function Home() {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleSliderMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    updateSliderPosition(e.clientX);
+  };
+
+  const handleSliderMouseMove = (e: React.MouseEvent) => {
+    if (isDragging) {
+      updateSliderPosition(e.clientX);
+    }
+  };
+
+  const handleSliderMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleSliderTouchMove = (e: React.TouchEvent) => {
+    updateSliderPosition(e.touches[0].clientX);
+  };
+
+  const updateSliderPosition = (clientX: number) => {
+    if (sliderRef.current) {
+      const rect = sliderRef.current.getBoundingClientRect();
+      const percentage = ((clientX - rect.left) / rect.width) * 100;
+      const clampedValue = Math.min(Math.max(percentage, 0), 100);
+      setBeforeAfterSlider([clampedValue]);
+    }
+  };
 
   const testimonials = [
     {
@@ -179,7 +209,15 @@ export default function Home() {
           <div className="grid lg:grid-cols-2 gap-8 items-center mb-12">
             <div className="relative overflow-hidden rounded-xl bg-muted aspect-video">
               {/* Before/After Slider Container */}
-              <div className="relative w-full h-full">
+              <div 
+                ref={sliderRef}
+                className="relative w-full h-full select-none"
+                onMouseDown={handleSliderMouseDown}
+                onMouseMove={handleSliderMouseMove}
+                onMouseUp={handleSliderMouseUp}
+                onMouseLeave={handleSliderMouseUp}
+                onTouchMove={handleSliderTouchMove}
+              >
                 {/* Before Image */}
                 <img 
                   src={BeforeImage} 
@@ -209,12 +247,15 @@ export default function Home() {
                 
                 {/* Slider Handle */}
                 <div 
-                  className="absolute top-0 bottom-0 w-1 bg-white shadow-xl cursor-ew-resize transition-none"
-                  style={{ left: `${beforeAfterSlider[0]}%` }}
+                  className="absolute top-0 bottom-0 w-1 bg-white shadow-xl transition-none"
+                  style={{ 
+                    left: `${beforeAfterSlider[0]}%`,
+                    cursor: isDragging ? 'grabbing' : 'grab'
+                  }}
                 >
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center">
-                    <ChevronLeft className="absolute h-4 w-4 text-muted-foreground -left-[2px]" />
-                    <ChevronRight className="absolute h-4 w-4 text-muted-foreground -right-[2px]" />
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-primary/20 hover:scale-110 transition-transform">
+                    <ChevronLeft className="absolute h-4 w-4 text-primary -left-[2px]" />
+                    <ChevronRight className="absolute h-4 w-4 text-primary -right-[2px]" />
                   </div>
                 </div>
               </div>
