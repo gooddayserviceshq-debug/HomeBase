@@ -338,7 +338,7 @@ export default function Home() {
             </Link>
             <Button size="lg" variant="outline" className="gap-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all border-white/20 transform hover:scale-105" data-testid="button-call-now">
               <Phone className="h-5 w-5" />
-              Call (615) 555-0100
+              Call 615-390-9779
             </Button>
           </div>
         </div>
