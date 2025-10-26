@@ -80,7 +80,7 @@ export default function CEODashboard() {
   }, [isAuthenticated, authLoading, navigate, toast]);
 
   const { data: analytics, isLoading } = useQuery<Analytics>({
-    queryKey: ["/api/ceo/analytics", selectedPeriod],
+    queryKey: ["/api/ceo/analytics"],
     enabled: isAuthenticated,
   });
 
