@@ -306,12 +306,12 @@ export default function Home() {
               { type: "Patio", location: "Brentwood", size: "1,200 sq ft", image: PatioImage },
               { type: "Walkway", location: "Spring Hill", size: "800 sq ft", image: WalkwayImage }
             ].map((project, index) => (
-              <Card key={index} className="overflow-hidden group cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-xl" onClick={() => setSelectedProject(index)}>
+              <Card key={index} className="overflow-hidden group cursor-pointer transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl" onClick={() => setSelectedProject(index)}>
                 <div className="relative aspect-video">
                   <img 
                     src={project.image} 
                     alt={`${project.type} restoration project`}
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                   <div className="absolute bottom-3 left-3 right-3">
