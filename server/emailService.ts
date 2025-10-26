@@ -93,14 +93,14 @@ export function generatePropertyCleaningQuoteEmail(quote: PropertyCleaningQuote)
       </ol>
       
       <center>
-        <a href="tel:615-555-0123" class="button">Call to Schedule: (615) 555-0123</a>
+        <a href="tel:615-390-9779" class="button">Call to Schedule: 615-390-9779</a>
       </center>
       
       <div class="footer">
         <p><strong>Good Day Services</strong><br>
         Murfreesboro, TN<br>
-        (615) 555-0123<br>
-        info@gooddayservices.com</p>
+        615-390-9779<br>
+        GoodDayServicesHQ@gmail.com</p>
         <p style="font-size: 12px;">This quote is valid for 30 days from the date of issue. Prices subject to change based on actual property conditions.</p>
       </div>
     </div>
@@ -128,15 +128,15 @@ Total: $${quote.finalTotal}
 
 Next Steps:
 1. Review your quote details
-2. Contact us to schedule: (615) 555-0123
+2. Contact us to schedule: 615-390-9779
 3. We'll confirm within 24 hours
 
 This quote is valid for 30 days.
 
 Good Day Services
 Murfreesboro, TN
-(615) 555-0123
-info@gooddayservices.com
+615-390-9779
+GoodDayServicesHQ@gmail.com
   `;
 
   return { subject, html, text };
@@ -231,14 +231,14 @@ export function generateRestorationQuoteEmail(quote: QuoteRequest): {
       </ol>
       
       <center>
-        <a href="tel:615-555-0123" class="button">Call to Schedule: (615) 555-0123</a>
+        <a href="tel:615-390-9779" class="button">Call to Schedule: 615-390-9779</a>
       </center>
       
       <div class="footer">
         <p><strong>Good Day Services</strong><br>
         Murfreesboro, TN<br>
-        (615) 555-0123<br>
-        info@gooddayservices.com</p>
+        615-390-9779<br>
+        GoodDayServicesHQ@gmail.com</p>
         <p style="font-size: 12px;">This quote is valid for 30 days from the date of issue. Final pricing may vary based on actual site conditions.</p>
       </div>
     </div>
@@ -285,15 +285,15 @@ Premium Service - $${quote.premiumTierPrice}
 
 Next Steps:
 1. Choose your service tier
-2. Call us at (615) 555-0123
+2. Call us at 615-390-9779
 3. We'll schedule your restoration
 
 This quote is valid for 30 days.
 
 Good Day Services
 Murfreesboro, TN
-(615) 555-0123
-info@gooddayservices.com
+615-390-9779
+GoodDayServicesHQ@gmail.com
   `;
 
   return { subject, html, text };
@@ -314,7 +314,7 @@ Services: ${[
 
 Total: $${quote.finalTotal}
 
-Call (615) 555-0123 to schedule
+Call 615-390-9779 to schedule
 Valid 30 days`;
 }
 
@@ -326,6 +326,6 @@ Basic: $${quote.basicTierPrice}
 Recommended: $${quote.recommendedTierPrice}
 Premium: $${quote.premiumTierPrice}
 
-Call (615) 555-0123 to schedule
+Call 615-390-9779 to schedule
 Valid 30 days`;
 }
