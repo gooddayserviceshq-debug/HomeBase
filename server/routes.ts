@@ -688,6 +688,192 @@ ${validatedData.message}
     }
   });
 
+  // CEO Dashboard Analytics
+  app.get("/api/ceo/analytics", isAuthenticated, async (req: any, res) => {
+    try {
+      const [
+        restorationQuotes,
+        cleaningQuotes,
+        inquiries,
+        orders,
+        warranties,
+        products
+      ] = await Promise.all([
+        storage.getQuoteRequests(),
+        storage.getPropertyCleaningQuotes(),
+        storage.getCustomerInquiries(),
+        storage.getOrders(),
+        storage.getWarranties(),
+        storage.getProducts()
+      ]);
+
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
+      // Quote Analytics
+      const totalRestorationQuotes = restorationQuotes.length;
+      const totalCleaningQuotes = cleaningQuotes.length;
+      const totalQuotes = totalRestorationQuotes + totalCleaningQuotes;
+      
+      const recentRestorationQuotes = restorationQuotes.filter(q => 
+        new Date(q.createdAt) >= thirtyDaysAgo
+      );
+      const recentCleaningQuotes = cleaningQuotes.filter(q => 
+        new Date(q.createdAt) >= thirtyDaysAgo
+      );
+
+      // Calculate average quote values
+      const avgRestorationValue = restorationQuotes.length > 0
+        ? restorationQuotes.reduce((sum, q) => {
+            const tier = q.selectedTier;
+            const price = tier === 'basic' ? parseFloat(q.basicTierPrice) :
+                         tier === 'recommended' ? parseFloat(q.recommendedTierPrice) :
+                         parseFloat(q.premiumTierPrice);
+            return sum + price;
+          }, 0) / restorationQuotes.length
+        : 0;
+
+      const avgCleaningValue = cleaningQuotes.length > 0
+        ? cleaningQuotes.reduce((sum, q) => sum + parseFloat(q.finalTotal), 0) / cleaningQuotes.length
+        : 0;
+
+      // Revenue Analytics
+      const totalProductRevenue = orders.reduce((sum, order) => sum + parseFloat(order.total), 0);
+      
+      // Estimate service revenue from quotes (assuming 30% conversion)
+      const estimatedRestorationRevenue = restorationQuotes.reduce((sum, q) => {
+        const tier = q.selectedTier;
+        const price = tier === 'basic' ? parseFloat(q.basicTierPrice) :
+                     tier === 'recommended' ? parseFloat(q.recommendedTierPrice) :
+                     parseFloat(q.premiumTierPrice);
+        return sum + price;
+      }, 0) * 0.3;
+
+      const estimatedCleaningRevenue = cleaningQuotes.reduce((sum, q) => 
+        sum + parseFloat(q.finalTotal), 0) * 0.3;
+
+      const totalEstimatedRevenue = totalProductRevenue + estimatedRestorationRevenue + estimatedCleaningRevenue;
+
+      // Customer Analytics
+      const uniqueEmails = new Set([
+        ...restorationQuotes.map(q => q.email),
+        ...cleaningQuotes.map(q => q.customerEmail),
+        ...orders.map(o => o.email),
+        ...inquiries.map(i => i.email)
+      ]);
+      const totalCustomers = uniqueEmails.size;
+
+      // Calculate repeat customers (appeared in multiple tables)
+      const emailCounts = new Map<string, number>();
+      [...restorationQuotes.map(q => q.email),
+       ...cleaningQuotes.map(q => q.customerEmail),
+       ...orders.map(o => o.email)].forEach(email => {
+        emailCounts.set(email, (emailCounts.get(email) || 0) + 1);
+      });
+      const repeatCustomers = Array.from(emailCounts.values()).filter(count => count > 1).length;
+
+      // Geographic distribution
+      const cityDistribution = new Map<string, number>();
+      restorationQuotes.forEach(q => {
+        const city = extractCity(q.address);
+        if (city) cityDistribution.set(city, (cityDistribution.get(city) || 0) + 1);
+      });
+      cleaningQuotes.forEach(q => {
+        const city = extractCity(q.propertyAddress);
+        if (city) cityDistribution.set(city, (cityDistribution.get(city) || 0) + 1);
+      });
+
+      // Service breakdown
+      const serviceBreakdown = {
+        paverRestoration: totalRestorationQuotes,
+        propertyCleaning: totalCleaningQuotes,
+        products: orders.length,
+        warranties: warranties.filter(w => w.status === 'active').length
+      };
+
+      // Monthly trends
+      const monthlyQuotes = new Map<string, number>();
+      const monthlyRevenue = new Map<string, number>();
+      
+      [...restorationQuotes, ...cleaningQuotes].forEach(q => {
+        const month = new Date(q.createdAt).toISOString().slice(0, 7);
+        monthlyQuotes.set(month, (monthlyQuotes.get(month) || 0) + 1);
+      });
+
+      orders.forEach(o => {
+        const month = new Date(o.createdAt).toISOString().slice(0, 7);
+        monthlyRevenue.set(month, (monthlyRevenue.get(month) || 0) + parseFloat(o.total));
+      });
+
+      // Recent activity
+      const recentActivity = [
+        ...restorationQuotes.filter(q => new Date(q.createdAt) >= sevenDaysAgo)
+          .map(q => ({ type: 'restoration_quote', date: q.createdAt, value: q.selectedTier, customer: q.email })),
+        ...cleaningQuotes.filter(q => new Date(q.createdAt) >= sevenDaysAgo)
+          .map(q => ({ type: 'cleaning_quote', date: q.createdAt, value: q.finalTotal, customer: q.customerEmail })),
+        ...inquiries.filter(i => new Date(i.createdAt) >= sevenDaysAgo)
+          .map(i => ({ type: 'inquiry', date: i.createdAt, value: i.inquiryType, customer: i.email })),
+        ...orders.filter(o => new Date(o.createdAt) >= sevenDaysAgo)
+          .map(o => ({ type: 'order', date: o.createdAt, value: o.total, customer: o.email }))
+      ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      // Key metrics
+      const keyMetrics = {
+        totalQuotes,
+        totalCustomers,
+        totalRevenue: totalEstimatedRevenue,
+        avgQuoteValue: totalQuotes > 0 ? (avgRestorationValue + avgCleaningValue) / 2 : 0,
+        conversionRate: 30, // Estimated 30%
+        activeWarranties: warranties.filter(w => w.status === 'active').length,
+        pendingInquiries: inquiries.filter(i => i.status === 'new').length,
+        repeatCustomerRate: totalCustomers > 0 ? (repeatCustomers / totalCustomers * 100).toFixed(1) : '0'
+      };
+
+      res.json({
+        keyMetrics,
+        serviceBreakdown,
+        monthlyTrends: {
+          quotes: Array.from(monthlyQuotes.entries()).map(([month, count]) => ({ month, count })),
+          revenue: Array.from(monthlyRevenue.entries()).map(([month, amount]) => ({ month, amount }))
+        },
+        geographicDistribution: Array.from(cityDistribution.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map(([city, count]) => ({ city, count })),
+        recentActivity: recentActivity.slice(0, 20),
+        quoteAnalytics: {
+          restoration: {
+            total: totalRestorationQuotes,
+            recent: recentRestorationQuotes.length,
+            avgValue: avgRestorationValue
+          },
+          cleaning: {
+            total: totalCleaningQuotes,
+            recent: recentCleaningQuotes.length,
+            avgValue: avgCleaningValue
+          }
+        }
+      });
+    } catch (error) {
+      console.error("CEO Analytics Error:", error);
+      res.status(500).json({ error: "Failed to fetch CEO analytics" });
+    }
+  });
+
+  // Helper function to extract city from address
+  function extractCity(address: string): string | null {
+    // Simple extraction - looks for "City, State" pattern
+    const match = address.match(/,\s*([^,]+),\s*[A-Z]{2}/i);
+    if (match) return match[1].trim();
+    
+    // Fallback to Murfreesboro if not found
+    return "Murfreesboro";
+  }
+
   app.get("/api/admin/orders", isAuthenticated, async (req: any, res) => {
     try {
       const orders = await storage.getOrders();
