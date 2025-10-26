@@ -83,18 +83,31 @@ export function generatePropertyCleaningQuoteEmail(quote: PropertyCleaningQuote)
         </div>
       </div>
       
-
+      <div class="warning" style="background: #dcfce7; border: 1px solid #10b981;">
+        <strong>🎯 Limited Time Offer:</strong> Book within 48 hours and save 10% on your total service!
+      </div>
       
-      <h3>Next Steps:</h3>
+      <h3>Ready to Transform Your Property?</h3>
+      <center>
+        <a href="tel:615-390-9779" class="button" style="background: #10b981; font-size: 18px; padding: 16px 32px;">
+          ✓ Book Now & Save 10% - Call 615-390-9779
+        </a>
+        <p style="margin: 10px 0; color: #6b7280;">
+          <strong>Or Text "BOOK" to 615-390-9779</strong> for instant scheduling
+        </p>
+      </center>
+      
+      <h3>What Happens Next:</h3>
       <ol>
-        <li>Review your quote details above</li>
-        <li>Contact us to schedule your service</li>
-        <li>We'll confirm your appointment within 24 hours</li>
+        <li>📞 <strong>Call or text us</strong> - We're available 7 days a week</li>
+        <li>📅 <strong>Choose your date</strong> - Most appointments available within 3-5 days</li>
+        <li>💳 <strong>Secure your booking</strong> - Pay online or after service completion</li>
+        <li>✨ <strong>Enjoy your clean property</strong> - 100% satisfaction guaranteed!</li>
       </ol>
       
-      <center>
-        <a href="tel:615-390-9779" class="button">Call to Schedule: 615-390-9779</a>
-      </center>
+      <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 10px; margin: 20px 0;">
+        <strong>⚡ High Demand Alert:</strong> We're currently booking 7-10 days out. Reserve your spot today!
+      </div>
       
       <div class="footer">
         <p><strong>Good Day Services</strong><br>
@@ -221,18 +234,36 @@ export function generateRestorationQuoteEmail(quote: QuoteRequest): {
         </ul>
       </div>
       
-
+      <div style="background: #dcfce7; border: 1px solid #10b981; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        <strong>🎯 Early Bird Special:</strong> Book the Recommended Service within 72 hours and receive:
+        <ul style="margin: 10px 0;">
+          <li>FREE spot & stain pre-treatment ($150 value)</li>
+          <li>10% discount on your total service</li>
+          <li>Priority scheduling - start within 5 business days</li>
+        </ul>
+      </div>
       
-      <h3>Next Steps:</h3>
+      <h3>Ready to Restore Your Pavers?</h3>
+      <center>
+        <a href="tel:615-390-9779" class="button" style="background: #10b981; font-size: 18px; padding: 16px 32px;">
+          ✓ Lock in Your Quote - Call 615-390-9779
+        </a>
+        <p style="margin: 10px 0; color: #6b7280;">
+          <strong>Text "PAVERS" to 615-390-9779</strong> for fastest response
+        </p>
+      </center>
+      
+      <h3>Your Investment Includes:</h3>
       <ol>
-        <li>Choose your preferred service tier</li>
-        <li>Contact us to schedule your restoration</li>
-        <li>We'll provide a detailed timeline and preparation instructions</li>
+        <li>✅ <strong>Free On-Site Evaluation</strong> - We verify measurements and conditions</li>
+        <li>🛡️ <strong>Full Warranty Protection</strong> - Up to 5 years depending on tier</li>
+        <li>💳 <strong>Flexible Payment Options</strong> - Pay after completion or finance available</li>
+        <li>⭐ <strong>Satisfaction Guarantee</strong> - Not happy? We'll make it right!</li>
       </ol>
       
-      <center>
-        <a href="tel:615-390-9779" class="button">Call to Schedule: 615-390-9779</a>
-      </center>
+      <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 10px; margin: 20px 0;">
+        <strong>⏰ Limited Availability:</strong> Spring is our busiest season! We're currently scheduling 2-3 weeks out. Secure your spot now!
+      </div>
       
       <div class="footer">
         <p><strong>Good Day Services</strong><br>
