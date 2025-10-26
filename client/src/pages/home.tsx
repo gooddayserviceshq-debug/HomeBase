@@ -2,13 +2,16 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Shield, Clock, Award, ArrowRight, Play, Star, Users, Sparkles, ChevronRight, Phone } from "lucide-react";
+import { CheckCircle2, Shield, Clock, Award, ArrowRight, Play, Star, Users, Sparkles, ChevronRight, Phone, MapPin, Building2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { Slider } from "@/components/ui/slider";
 
 export default function Home() {
   const [scrollY, setScrollY] = useState(0);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const [beforeAfterSlider, setBeforeAfterSlider] = useState([50]);
+  const [selectedProject, setSelectedProject] = useState(0);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -154,7 +157,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Before/After Showcase */}
+      {/* Before/After Showcase with Interactive Slider */}
       <section className="py-20 px-4 bg-background">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-12 space-y-4">
@@ -168,19 +171,119 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Before/After Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((item) => (
-              <Card key={item} className="overflow-hidden group cursor-pointer animate-fade-in-up" style={{ animationDelay: `${item * 100}ms` }}>
-                <div className="relative aspect-video bg-muted overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent z-10" />
-                  <div className="absolute bottom-4 left-4 z-20">
-                    <Badge className="mb-2">Before & After</Badge>
-                    <p className="text-sm text-white font-medium">Driveway Restoration</p>
+          {/* Interactive Before/After Comparison */}
+          <div className="grid lg:grid-cols-2 gap-8 items-center mb-12">
+            <div className="relative overflow-hidden rounded-xl bg-muted aspect-video">
+              {/* Before/After Slider Container */}
+              <div className="relative w-full h-full">
+                <div className="absolute inset-0 bg-gradient-to-br from-destructive/20 to-destructive/10 flex items-center justify-center">
+                  <div className="text-center">
+                    <Badge variant="destructive" className="mb-2">Before</Badge>
+                    <p className="text-sm text-muted-foreground">Stained & Weathered</p>
                   </div>
-                  <div className="absolute inset-0 bg-primary/10 group-hover:scale-110 transition-transform duration-500" />
+                </div>
+                <div 
+                  className="absolute inset-0 bg-gradient-to-br from-green-500/20 to-green-600/10 flex items-center justify-center overflow-hidden"
+                  style={{ clipPath: `inset(0 ${100 - beforeAfterSlider[0]}% 0 0)` }}
+                >
+                  <div className="text-center">
+                    <Badge className="mb-2 bg-green-600">After</Badge>
+                    <p className="text-sm text-muted-foreground">Restored & Protected</p>
+                  </div>
+                </div>
+                {/* Slider Handle */}
+                <div 
+                  className="absolute top-0 bottom-0 w-1 bg-white shadow-xl cursor-ew-resize"
+                  style={{ left: `${beforeAfterSlider[0]}%` }}
+                >
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center">
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <h3 className="text-2xl font-bold">Driveway Restoration Project</h3>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">Murfreesboro, TN</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">3,500 sq ft surface area</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">Completed in 2 days</span>
+                </div>
+              </div>
+              <div className="pt-4">
+                <p className="text-sm text-muted-foreground mb-2">Drag to compare</p>
+                <Slider 
+                  value={beforeAfterSlider} 
+                  onValueChange={setBeforeAfterSlider}
+                  max={100}
+                  step={1}
+                  className="w-full"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4 pt-4">
+                <Card className="p-4 text-center">
+                  <p className="text-3xl font-bold text-primary">95%</p>
+                  <p className="text-xs text-muted-foreground">Stain Removal</p>
+                </Card>
+                <Card className="p-4 text-center">
+                  <p className="text-3xl font-bold text-primary">5yr</p>
+                  <p className="text-xs text-muted-foreground">Protection</p>
+                </Card>
+              </div>
+            </div>
+          </div>
+
+          {/* Project Gallery */}
+          <div className="grid md:grid-cols-3 gap-4">
+            {[
+              { type: "Driveway", location: "Franklin", size: "2,800 sq ft" },
+              { type: "Patio", location: "Brentwood", size: "1,200 sq ft" },
+              { type: "Walkway", location: "Spring Hill", size: "800 sq ft" }
+            ].map((project, index) => (
+              <Card key={index} className="overflow-hidden group cursor-pointer" onClick={() => setSelectedProject(index)}>
+                <div className="relative aspect-video bg-muted">
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                  <div className="absolute bottom-3 left-3">
+                    <Badge variant="secondary" className="mb-1">Completed</Badge>
+                    <p className="text-sm font-medium text-white">{project.type} Restoration</p>
+                    <p className="text-xs text-white/80">{project.location} • {project.size}</p>
+                  </div>
                 </div>
               </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Trust Indicators Section */}
+      <section className="py-16 px-4 bg-muted/30">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-8">
+            <h3 className="text-2xl font-bold mb-2">Trusted & Certified</h3>
+            <p className="text-muted-foreground">Your satisfaction is guaranteed</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {[
+              { icon: Shield, label: "Licensed & Insured", desc: "Full Coverage" },
+              { icon: Award, label: "5-Star Rated", desc: "500+ Reviews" },
+              { icon: CheckCircle2, label: "Satisfaction Guaranteed", desc: "100% Promise" },
+              { icon: Clock, label: "On-Time Service", desc: "Or It's Free" }
+            ].map((item, index) => (
+              <div key={index} className="text-center group">
+                <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-3 group-hover:bg-primary/20 transition-colors">
+                  <item.icon className="h-8 w-8 text-primary" />
+                </div>
+                <p className="font-medium text-sm">{item.label}</p>
+                <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
+              </div>
             ))}
           </div>
         </div>
