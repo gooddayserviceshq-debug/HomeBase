@@ -675,13 +675,27 @@ ${validatedData.message}
       const orders = await storage.getOrders();
       const totalRevenue = orders.reduce((sum, order) => sum + parseFloat(order.total), 0);
       const pendingOrders = orders.filter(o => o.status === "pending").length;
-      
+
+      // Count customers whose first-ever order was placed this calendar month
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const firstOrderByEmail = new Map<string, Date>();
+      orders.forEach(o => {
+        const orderDate = new Date(o.createdAt);
+        const existing = firstOrderByEmail.get(o.email);
+        if (!existing || orderDate < existing) {
+          firstOrderByEmail.set(o.email, orderDate);
+        }
+      });
+      const newCustomersThisMonth = Array.from(firstOrderByEmail.values())
+        .filter(date => date >= startOfMonth).length;
+
       res.json({
         totalRevenue,
         totalOrders: orders.length,
         pendingOrders,
         totalCustomers: new Set(orders.map(o => o.email)).size,
-        newCustomersThisMonth: 0, // Placeholder
+        newCustomersThisMonth,
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch stats" });
