@@ -1,8 +1,19 @@
 # ai_system.py
-# Simulates an AI assistant that responds to player prompts.
+# AI assistant for the Python game.
 #
-# Key idea: the QUALITY of the player's prompt determines how useful
-# the response is. This teaches prompt engineering as a mechanic.
+# How the Claude API fits in:
+#   ask_ai() → tries _call_claude_api() first.
+#   If Claude is unavailable (no key, no network, any error) it falls back
+#   to RESPONSES[], the hand-written tier responses from before.
+#
+# The prompt quality score still matters:
+#   It's passed to Claude via the system prompt, which instructs Claude
+#   to be more or less helpful depending on tier. So a poor prompt still
+#   gets a vague response — Claude just writes it dynamically now.
+#
+# Security:
+#   API key is read from the ANTHROPIC_API_KEY environment variable only.
+#   Never hardcoded. Load from game/.env file if present (no extra packages).
 #
 # Scoring breakdown (max 8 points):
 #   Length    0-3 pts  (longer = more detail = better)
@@ -15,6 +26,30 @@
 #   3-4 → Tier 2: Okay     (general nudge)
 #   5-6 → Tier 3: Good     (specific guidance)
 #   7-8 → Tier 4: Excellent (step-by-step explanation)
+
+import os
+
+# ── .env loader (no extra packages needed) ─────────────────────────────────────
+
+def _load_env():
+    """
+    Read game/.env and push any KEY=VALUE lines into os.environ.
+    Skips blank lines and comments. Never overwrites existing env vars.
+    Call once at module load time.
+    """
+    env_path = os.path.join(os.path.dirname(__file__), ".env")
+    if not os.path.exists(env_path):
+        return
+    with open(env_path) as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            os.environ.setdefault(key.strip(), value.strip())
+
+_load_env()   # run at import time so the key is always available
+
 
 # ── Scoring constants ──────────────────────────────────────────────────────────
 
@@ -192,23 +227,113 @@ def score_prompt(prompt: str, keywords: list) -> dict:
     }
 
 
+# ── Claude API call ────────────────────────────────────────────────────────────
+
+# System prompt template sent to Claude on every ask.
+# The tier instruction is the key: it tells Claude how helpful to be,
+# so the prompt quality mechanic still works with the real API.
+_SYSTEM_TEMPLATE = """\
+You are a helpful AI assistant inside an educational Python game called "The Lab".
+
+CURRENT MISSION
+  Title : {title}
+  Goal  : {goal}
+
+PLAYER'S CURRENT CODE
+```python
+{code}
+```
+
+RESPONSE RULES — follow these exactly:
+  Tier 1 (Poor prompt)      : Give only a vague hint. Do NOT mention specific \
+functions, operators, or code. One sentence max.
+  Tier 2 (Okay prompt)      : Give a general nudge. Mention the concept but \
+not the syntax. Two sentences max.
+  Tier 3 (Good prompt)      : Give specific guidance with the relevant syntax. \
+No complete solution. Three sentences max.
+  Tier 4 (Excellent prompt) : Give a clear explanation and a short code example \
+that illustrates the concept (not the full answer). Four sentences max.
+
+The player's prompt quality is Tier {tier} ({tier_label}).
+Respond at that tier level. Be encouraging. Never give the complete solution.\
+"""
+
+
+def _call_claude_api(
+    player_prompt: str,
+    mission: dict,
+    score: dict,
+    current_code: str,
+) -> str | None:
+    """
+    Send the player's question to Claude and return its response text.
+    Returns None if:
+      - the anthropic package is not installed
+      - ANTHROPIC_API_KEY is not set
+      - any network or API error occurs
+    Callers should fall back to RESPONSES[] when this returns None.
+    """
+    # Lazy import — game still works if anthropic isn't installed
+    try:
+        import anthropic
+    except ImportError:
+        return None
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        return None
+
+    system = _SYSTEM_TEMPLATE.format(
+        title=mission["title"],
+        goal=mission["goal"],
+        code=current_code.strip() or "(player has not written any code yet)",
+        tier=score["tier"],
+        tier_label=score["tier_label"],
+    )
+
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        message = client.messages.create(
+            model="claude-haiku-4-5-20251001",  # fast + affordable for a game
+            max_tokens=250,
+            system=system,
+            messages=[{"role": "user", "content": player_prompt}],
+        )
+        return message.content[0].text
+    except Exception:
+        # Any API error (rate limit, network, invalid key) → use fallback
+        return None
+
+
 # ── Public API ─────────────────────────────────────────────────────────────────
 
-def ask_ai(prompt: str, mission: dict) -> dict:
+def ask_ai(prompt: str, mission: dict, current_code: str = "") -> dict:
     """
-    Main entry point. Given a player's prompt and the current mission,
-    return a dict with the AI response and quality analysis.
+    Main entry point. Given a player's prompt, the current mission,
+    and the player's current code, return an AI response + quality analysis.
+
+    Tries the Claude API first; falls back to hand-written RESPONSES[]
+    if Claude is unavailable for any reason.
 
     Returns:
     {
-        'response':    str,   # the simulated AI reply
+        'response':    str,   # the AI reply (Claude or fallback)
         'score':       dict,  # full score breakdown from score_prompt()
+        'source':      str,   # 'claude' or 'fallback'
     }
     """
     keywords = mission.get("keywords", [])
     score = score_prompt(prompt, keywords)
-    response = RESPONSES[mission["id"]][score["tier"]]
-    return {"response": response, "score": score}
+
+    # ← THE API CALL LIVES HERE
+    response = _call_claude_api(prompt, mission, score, current_code)
+    source = "claude"
+
+    if response is None:                          # fallback if API unavailable
+        response = RESPONSES[mission["id"]][score["tier"]]
+        source = "fallback"
+
+    return {"response": response, "score": score, "source": source}
 
 
 def format_ai_output(result: dict) -> str:
@@ -217,11 +342,13 @@ def format_ai_output(result: dict) -> str:
     Shows the AI response, then the prompt quality breakdown.
     """
     score = result["score"]
+    source = result.get("source", "fallback")
     lines = []
 
     # ── AI Response ────────────────────────────────────────────────────────
+    header = "  ── CLAUDE " if source == "claude" else "  ── AI RESPONSE "
     lines.append("")
-    lines.append("  ── AI RESPONSE " + "─" * 25)
+    lines.append(header + "─" * (40 - len(header)))
     lines.append("")
     for line in result["response"].splitlines():
         lines.append(f"    {line}")

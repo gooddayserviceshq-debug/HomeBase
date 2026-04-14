@@ -102,6 +102,8 @@ def show_ai_exchange(mission: dict):
     """
     Prompt the player to type a question, then display the AI response
     along with the prompt quality breakdown.
+    The player's current code is passed to the AI so it can give
+    context-aware help (e.g. Claude can see exactly what they wrote).
     """
     print()
     print("  ── ASK THE AI " + "─" * 26)
@@ -115,7 +117,8 @@ def show_ai_exchange(mission: dict):
         input("  Press ENTER...")
         return
 
-    result = ask_ai(player_prompt, mission)
+    current_code = read_workspace()               # ← give Claude the player's code
+    result = ask_ai(player_prompt, mission, current_code=current_code)
     print(format_ai_output(result))
     input("  Press ENTER to continue...")
 

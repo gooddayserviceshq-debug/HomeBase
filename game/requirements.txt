@@ -1,0 +1,6 @@
+# Python AI Game — dependencies
+# Install with:  pip install -r game/requirements.txt
+#
+# anthropic is optional — the game falls back to built-in responses
+# if the package is missing or no API key is set.
+anthropic>=0.40.0
