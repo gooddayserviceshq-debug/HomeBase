@@ -6,6 +6,8 @@
 #   hint        - one-line nudge if they get stuck
 #   starter     - the code the player starts with (edit this to win)
 #   test        - a function(output: str) -> bool that checks correctness
+#   keywords    - terms the AI system looks for in the player's prompt
+#                 (more keyword matches = higher prompt quality score)
 
 MISSIONS = [
     {
@@ -18,6 +20,7 @@ MISSIONS = [
         ),
         "goal": 'Make your code print exactly:  Hello, World!',
         "hint": "Use the print() function with the exact text.",
+        "keywords": ["print", "hello", "world", "string", "quotes", "output", "function"],
         "starter": (
             "# Fix this code so it prints: Hello, World!\n"
             "\n"
@@ -36,6 +39,7 @@ MISSIONS = [
         ),
         "goal": "Define add(a, b) and print add(3, 7).  Expected output:  10",
         "hint": "def add(a, b): return a + b",
+        "keywords": ["add", "return", "function", "def", "sum", "plus", "pass", "parameter"],
         "starter": (
             "# Complete the function so add(3, 7) prints 10\n"
             "\n"
@@ -59,6 +63,7 @@ MISSIONS = [
             "  1 Odd\n  2 Even\n  3 Odd\n  4 Even\n  5 Odd"
         ),
         "hint": "Use a for loop and the modulo operator %",
+        "keywords": ["loop", "range", "modulo", "remainder", "even", "odd", "if", "else", "percent", "for"],
         "starter": (
             "# Loop through 1 to 5 and print '<number> Even' or '<number> Odd'\n"
             "\n"

@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from missions import MISSIONS
 from runner import run_code
 from scoring import Score
+from ai_system import ask_ai, format_ai_output
 
 WORKSPACE = os.path.join(os.path.dirname(__file__), "workspace.py")
 
@@ -69,9 +70,12 @@ def show_welcome():
     print()
     print("  Commands available during a mission:")
     print("    ENTER  → run your code")
-    print("    hint   → show a hint  (-1 point)")
+    print("    ask    → ask the AI assistant a question")
+    print("    hint   → show a quick hint  (-1 point)")
     print("    skip   → skip this mission  (0 points)")
     print("    quit   → exit the game")
+    print()
+    print("  Pro tip: better prompts to the AI get better answers!")
     print()
     input("  Press ENTER to start...")
 
@@ -89,8 +93,31 @@ def show_mission(mission: dict, attempt: int):
         print(f"    {line}")
     print()
     print(f"  Edit  game/workspace.py  then press ENTER.")
+    print(f"  Commands: ask / hint / skip / quit")
     if attempt > 1:
         print(f"  (Attempt {attempt})")
+
+
+def show_ai_exchange(mission: dict):
+    """
+    Prompt the player to type a question, then display the AI response
+    along with the prompt quality breakdown.
+    """
+    print()
+    print("  ── ASK THE AI " + "─" * 26)
+    print("  Type your question and press ENTER.")
+    print("  (Tip: be specific — mention what you're stuck on)")
+    print()
+    player_prompt = input("  You: ").strip()
+
+    if not player_prompt:
+        print("\n  You didn't type anything. Try again with a real question.")
+        input("  Press ENTER...")
+        return
+
+    result = ask_ai(player_prompt, mission)
+    print(format_ai_output(result))
+    input("  Press ENTER to continue...")
 
 
 def show_result(success: bool, output: str, passed: bool, points: int = 0):
@@ -123,10 +150,15 @@ def play_mission(mission: dict, score: Score) -> bool:
         attempt += 1
         show_mission(mission, attempt)
 
-        command = prompt("[ENTER / hint / skip / quit] →")
+        command = prompt("[ENTER / ask / hint / skip / quit] →")
 
         if command == "quit":
             return False          # signal main loop to stop
+
+        if command == "ask":
+            show_ai_exchange(mission)
+            attempt -= 1          # asking AI doesn't count as an attempt
+            continue
 
         if command == "hint":
             print(f"\n  HINT: {mission['hint']}")
