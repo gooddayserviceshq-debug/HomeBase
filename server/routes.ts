@@ -3,7 +3,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { sendEmail } from "./sendEmail";
+import { sendEmail, notifyOwner } from "./sendEmail";
 import { z } from "zod";
 import Stripe from "stripe";
 import { 
@@ -194,10 +194,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         premiumTierPrice: tiers.premium.price.toString(),
       });
 
-      res.json({ 
-        success: true, 
+      // Notify Blake
+      notifyOwner(
+        `New Restoration Quote — ${quoteData.name}`,
+        `Name: ${quoteData.name}\nPhone: ${quoteData.phone || "not provided"}\nEmail: ${quoteData.email}\nAddress: ${quoteData.address}\nArea: ${squareFootage} sq ft\n\nBasic: $${tiers.basic.price}\nRecommended: $${tiers.recommended.price}\nPremium: $${tiers.premium.price}`
+      ).catch(console.error);
+
+      res.json({
+        success: true,
         quoteId: quoteRequest.id,
-        tiers 
+        tiers
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -327,6 +333,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       );
       
+      // Notify Blake
+      const serviceList = [
+        validatedServices.driveway && "Driveway",
+        validatedServices.roof && "Roof",
+        validatedServices.siding && "Siding",
+        validatedServices.gutters && "Gutters",
+        validatedServices.fenceSides > 0 && `Fence (${validatedServices.fenceSides} sides)`,
+      ].filter(Boolean).join(", ");
+      notifyOwner(
+        `New Cleaning Quote — ${validatedCustomer.customerName}`,
+        `Name: ${validatedCustomer.customerName}\nPhone: ${validatedCustomer.customerPhone}\nEmail: ${validatedCustomer.customerEmail}\nAddress: ${validatedCustomer.propertyAddress}\nServices: ${serviceList}\nTotal: $${finalTotal}`
+      ).catch(console.error);
+
       res.json({ success: true, quoteId: quote.id, quote });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -644,30 +663,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const inquiry = await storage.createCustomerInquiry(validatedData);
       
-      // Send email notification to admin (optional)
-      try {
-        if (sendEmail && process.env.SENDGRID_API_KEY) {
-          await sendEmail({
-            to: "GoodDayServicesHQ@gmail.com",
-            subject: `New Customer Inquiry: ${validatedData.inquiryType}`,
-            text: `
-New customer inquiry received:
-
-Name: ${validatedData.name}
-Email: ${validatedData.email}
-Phone: ${validatedData.phone}
-Type: ${validatedData.inquiryType}
-Subject: ${validatedData.subject || "N/A"}
-
-Message:
-${validatedData.message}
-            `,
-          });
-        }
-      } catch (emailError) {
-        // Log error but don't fail the inquiry submission
-        console.error("Failed to send email notification:", emailError);
-      }
+      // Notify Blake (email + SMS)
+      notifyOwner(
+        `New Inquiry (${validatedData.inquiryType}) — ${validatedData.name}`,
+        `Name: ${validatedData.name}\nEmail: ${validatedData.email}\nPhone: ${validatedData.phone}\nType: ${validatedData.inquiryType}\nSubject: ${validatedData.subject || "N/A"}\n\nMessage:\n${validatedData.message}`
+      ).catch(console.error);
       
       res.json({
         success: true,
