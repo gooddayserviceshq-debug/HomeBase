@@ -2,9 +2,9 @@ import sgMail from "@sendgrid/mail";
 import type { PropertyCleaningQuote, QuoteRequest } from "@shared/schema";
 
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || "blake@gooddayservices.net";
+const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || "Blake@gooddaypressurewashing.com";
 const SENDGRID_FROM_NAME = "Good Day Services";
-const OWNER_EMAIL = "blake@gooddayservices.net";
+const OWNER_EMAIL = "Blake@gooddaypressurewashing.com";
 const OWNER_PHONE = "+16153909779";
 
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
