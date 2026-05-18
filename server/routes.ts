@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { sendEmail } from "./sendEmail";
 import { z } from "zod";
+import Stripe from "stripe";
 import { 
   quoteCalculationSchema,
   insertQuoteRequestSchema,
@@ -92,9 +93,34 @@ function calculateQuoteTiers(
   };
 }
 
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY)
+  : null;
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Replit Auth middleware
   await setupAuth(app);
+
+  // Stripe: create PaymentIntent for checkout
+  app.post("/api/create-payment-intent", async (req, res) => {
+    if (!stripe) {
+      return res.status(503).json({ error: "Payment processing not configured" });
+    }
+    try {
+      const { amount } = req.body;
+      if (!amount || typeof amount !== "number" || amount <= 0) {
+        return res.status(400).json({ error: "Invalid amount" });
+      }
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount * 100), // convert dollars to cents
+        currency: "usd",
+        automatic_payment_methods: { enabled: true },
+      });
+      res.json({ clientSecret: paymentIntent.client_secret });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 
   // Auth routes - Referenced from Replit Auth blueprint
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
