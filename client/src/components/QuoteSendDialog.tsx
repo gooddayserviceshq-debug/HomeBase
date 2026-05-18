@@ -166,7 +166,7 @@ export function QuoteSendDialog({
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="(615) 555-0123"
+                placeholder="(615) 390-9779"
                 data-testid="input-phone"
               />
             </div>

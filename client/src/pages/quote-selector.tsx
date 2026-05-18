@@ -139,8 +139,8 @@ export default function QuoteSelector() {
         <div className="mt-12 text-center">
           <p className="text-muted-foreground">
             Not sure which service you need? Call us at{" "}
-            <a href="tel:615-555-0100" className="font-semibold text-primary hover:underline">
-              (615) 555-0100
+            <a href="tel:615-390-9779" className="font-semibold text-primary hover:underline">
+              (615) 390-9779
             </a>{" "}
             for a free consultation
           </p>

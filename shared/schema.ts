@@ -320,12 +320,12 @@ export const propertyCleaningQuotes = pgTable("property_cleaning_quotes", {
 
 // Property Cleaning Service Prices (for reference/configuration)
 export const cleaningServicePrices = {
-  driveway: 300,
-  roof: 300,
-  siding: 300,
-  gutters: 300,
-  fenceSmall: 75,  // Per side for small fence
-  fenceLarge: 150, // Per side for large fence
+  driveway: 350,
+  roof: 425,
+  siding: 375,
+  gutters: 200,
+  fenceSmall: 100,  // Per side for small fence
+  fenceLarge: 200,  // Per side for large fence
   minimumService: 975,
 };
 
