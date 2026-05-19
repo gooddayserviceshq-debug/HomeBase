@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/header";
+import { ReceptionistChat } from "@/components/ReceptionistChat";
 import Home from "@/pages/home";
 import Quote from "@/pages/quote";
 import QuoteSelector from "@/pages/quote-selector";
@@ -48,6 +49,7 @@ function App() {
               <Router />
             </main>
           </div>
+          <ReceptionistChat />
           <Toaster />
         </TooltipProvider>
       </ThemeProvider>
