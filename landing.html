@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Good Day Services – Pressure Washing | Nashville & Middle Tennessee</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --blue:#1565C0;--blue-light:#1E88E5;--blue-pale:#E3F2FD;
+    --dark:#0D1B2A;--mid:#2C4A6E;--muted:#5C7A99;
+    --white:#fff;--off:#F7FAFD;--border:#D0E2F4;
+    --text:#1A2E42;--sub:#4A6B8A;
+  }
+  html{scroll-behavior:smooth}
+  body{font-family:'Segoe UI',system-ui,sans-serif;color:var(--text);background:var(--white)}
+
+  /* NAV */
+  nav{position:sticky;top:0;z-index:100;background:var(--dark);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px}
+  .logo{color:#fff;font-size:1.1rem;font-weight:700;letter-spacing:.3px}
+  .logo span{color:#64B5F6}
+  .nav-links{display:flex;gap:1.8rem;list-style:none}
+  .nav-links a{color:#CBD8E8;font-size:.9rem;text-decoration:none;transition:color .2s}
+  .nav-links a:hover{color:#fff}
+  .nav-cta{background:var(--blue-light);color:#fff;padding:.45rem 1.1rem;border-radius:6px;font-size:.9rem;font-weight:600;text-decoration:none;transition:background .2s}
+  .nav-cta:hover{background:var(--blue)}
+
+  /* HERO */
+  .hero{background:linear-gradient(135deg,var(--dark) 0%,var(--mid) 100%);color:#fff;padding:5rem 2rem 4rem;text-align:center;position:relative;overflow:hidden}
+  .hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2364B5F6' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+  .hero-badge{display:inline-block;background:rgba(100,181,246,.15);border:1px solid rgba(100,181,246,.3);color:#90CAF9;font-size:.8rem;padding:.3rem .9rem;border-radius:20px;margin-bottom:1.2rem;letter-spacing:.5px}
+  .hero h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:800;line-height:1.15;margin-bottom:1rem;max-width:700px;margin-inline:auto}
+  .hero h1 span{color:#64B5F6}
+  .hero p{font-size:1.1rem;color:#B0C9E0;max-width:520px;margin:0 auto 2rem;line-height:1.7}
+  .hero-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+  .btn-primary{background:var(--blue-light);color:#fff;padding:.75rem 1.8rem;border-radius:8px;font-size:1rem;font-weight:700;text-decoration:none;transition:background .2s}
+  .btn-primary:hover{background:var(--blue)}
+  .btn-outline{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.3);padding:.75rem 1.8rem;border-radius:8px;font-size:1rem;font-weight:600;text-decoration:none;transition:all .2s}
+  .btn-outline:hover{border-color:#fff;background:rgba(255,255,255,.08)}
+  .hero-stats{display:flex;gap:2.5rem;justify-content:center;margin-top:3rem;flex-wrap:wrap}
+  .stat{text-align:center}
+  .stat strong{display:block;font-size:1.8rem;font-weight:800;color:#fff}
+  .stat span{font-size:.8rem;color:#7FA8C4;letter-spacing:.5px;text-transform:uppercase}
+
+  /* SECTIONS */
+  section{padding:4rem 2rem}
+  .section-inner{max-width:1000px;margin:0 auto}
+  .section-label{font-size:.75rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue-light);margin-bottom:.5rem}
+  .section-title{font-size:clamp(1.6rem,3.5vw,2.2rem);font-weight:800;color:var(--dark);margin-bottom:.75rem}
+  .section-sub{font-size:1rem;color:var(--sub);max-width:560px;line-height:1.7}
+
+  /* SERVICES */
+  #services{background:var(--off)}
+  .services-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-top:2.5rem}
+  .service-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:1.5rem;transition:box-shadow .2s,transform .2s}
+  .service-card:hover{box-shadow:0 4px 20px rgba(21,101,192,.1);transform:translateY(-2px)}
+  .service-icon{width:48px;height:48px;background:var(--blue-pale);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:1rem;font-size:1.4rem;color:var(--blue)}
+  .service-card h3{font-size:1rem;font-weight:700;margin-bottom:.4rem;color:var(--dark)}
+  .service-card p{font-size:.88rem;color:var(--sub);line-height:1.6}
+
+  /* ABOUT */
+  .about-grid{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center;margin-top:2rem}
+  @media(max-width:680px){.about-grid{grid-template-columns:1fr}}
+  .about-visual{background:var(--blue-pale);border-radius:16px;height:280px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.75rem}
+  .about-visual i{font-size:4rem;color:var(--blue)}
+  .about-visual span{font-size:.9rem;color:var(--mid);font-weight:600}
+  .about-list{list-style:none;margin-top:1.5rem;display:flex;flex-direction:column;gap:.75rem}
+  .about-list li{display:flex;align-items:flex-start;gap:.6rem;font-size:.95rem;color:var(--text);line-height:1.5}
+  .about-list li i{color:var(--blue-light);font-size:1.1rem;margin-top:2px;flex-shrink:0}
+
+  /* GALLERY */
+  #gallery{background:var(--off)}
+  .gallery-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-top:2.5rem}
+  .gallery-card{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .gallery-img{height:160px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.5rem;font-size:.85rem;color:var(--muted);font-weight:600}
+  .gallery-img i{font-size:2rem;color:var(--border)}
+  .gallery-before{background:#F5E6D3}
+  .gallery-after{background:#D8EEF5}
+  .gallery-label{padding:.6rem 1rem;font-size:.8rem;font-weight:700;color:var(--sub);display:flex;gap:.4rem;align-items:center}
+  .tag{font-size:.72rem;font-weight:700;padding:.2rem .55rem;border-radius:4px}
+  .tag-before{background:#FDEBD0;color:#A04000}
+  .tag-after{background:#D5F5E3;color:#1E8449}
+
+  /* CONTACT */
+  .contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:3rem;margin-top:2.5rem;align-items:start}
+  @media(max-width:680px){.contact-grid{grid-template-columns:1fr}}
+  .contact-info{display:flex;flex-direction:column;gap:1.25rem}
+  .contact-item{display:flex;align-items:flex-start;gap:.75rem}
+  .contact-item i{font-size:1.2rem;color:var(--blue-light);margin-top:2px;flex-shrink:0}
+  .contact-item strong{display:block;font-size:.85rem;font-weight:700;color:var(--dark);margin-bottom:.15rem}
+  .contact-item span{font-size:.9rem;color:var(--sub);line-height:1.5}
+  .contact-form{background:var(--off);border:1px solid var(--border);border-radius:16px;padding:1.75rem}
+  .form-group{margin-bottom:1rem}
+  .form-group label{display:block;font-size:.82rem;font-weight:700;color:var(--mid);margin-bottom:.35rem;letter-spacing:.3px}
+  .form-group input,.form-group select,.form-group textarea{width:100%;padding:.65rem .85rem;border:1px solid var(--border);border-radius:8px;font-size:.92rem;color:var(--text);background:var(--white);outline:none;transition:border .2s;font-family:inherit}
+  .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--blue-light)}
+  .form-group textarea{height:90px;resize:vertical}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+  .submit-btn{width:100%;background:var(--blue-light);color:#fff;border:none;padding:.8rem;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;transition:background .2s;font-family:inherit}
+  .submit-btn:hover{background:var(--blue)}
+
+  /* FOOTER */
+  footer{background:var(--dark);color:#B0C9E0;padding:2.5rem 2rem;text-align:center}
+  .footer-logo{font-size:1.1rem;font-weight:800;color:#fff;margin-bottom:.4rem}
+  .footer-logo span{color:#64B5F6}
+  .footer-tagline{font-size:.85rem;margin-bottom:1.25rem}
+  .footer-links{display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.25rem}
+  .footer-links a{color:#7FA8C4;font-size:.85rem;text-decoration:none}
+  .footer-links a:hover{color:#fff}
+  .footer-copy{font-size:.78rem;color:#4A6B8A}
+
+  /* CTA BAND */
+  .cta-band{background:var(--blue);color:#fff;padding:3rem 2rem;text-align:center}
+  .cta-band h2{font-size:1.8rem;font-weight:800;margin-bottom:.75rem}
+  .cta-band p{font-size:1rem;opacity:.85;margin-bottom:1.75rem}
+  .btn-white{background:#fff;color:var(--blue);padding:.75rem 2rem;border-radius:8px;font-size:1rem;font-weight:700;text-decoration:none;display:inline-block;transition:opacity .2s}
+  .btn-white:hover{opacity:.9}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Good Day <span>Services</span></div>
+  <ul class="nav-links">
+    <li><a href="#services">Services</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#gallery">Gallery</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <a href="#contact" class="nav-cta">Free Quote</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">Serving Nashville &amp; Surrounding Areas</div>
+  <h1>We Make Your Property <span>Shine</span></h1>
+  <p>Professional pressure washing for homes and businesses. Driveways, decks, roofs, and more — done right, every time.</p>
+  <div class="hero-btns">
+    <a href="#contact" class="btn-primary">Get a Free Quote</a>
+    <a href="#services" class="btn-outline">Our Services</a>
+  </div>
+  <div class="hero-stats">
+    <div class="stat"><strong>500+</strong><span>Jobs Completed</span></div>
+    <div class="stat"><strong>5★</strong><span>Avg Rating</span></div>
+    <div class="stat"><strong>Same-Day</strong><span>Estimates</span></div>
+    <div class="stat"><strong>Locally</strong><span>Owned &amp; Operated</span></div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section id="services">
+  <div class="section-inner">
+    <div class="section-label">What We Do</div>
+    <h2 class="section-title">Pressure Washing Services</h2>
+    <p class="section-sub">From your driveway to your rooftop, we've got every surface covered.</p>
+    <div class="services-grid">
+      <div class="service-card">
+        <div class="service-icon"><i class="ti ti-home" aria-hidden="true"></i></div>
+        <h3>Residential Exterior</h3>
+        <p>Full house washing — siding, brick, stucco. Restore your curb appeal fast.</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon"><i class="ti ti-road" aria-hidden="true"></i></div>
+        <h3>Driveways &amp; Sidewalks</h3>
+        <p>Blast away oil stains, grime, and algae from concrete and pavers.</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon"><i class="ti ti-trees" aria-hidden="true"></i></div>
+        <h3>Decks &amp; Patios</h3>
+        <p>Soft wash or pressure wash for wood, composite, and stone surfaces.</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon"><i class="ti ti-building" aria-hidden="true"></i></div>
+        <h3>Commercial</h3>
+        <p>Storefronts, parking lots, and commercial properties kept clean and professional.</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon"><i class="ti ti-tools" aria-hidden="true"></i></div>
+        <h3>Roof Soft Wash</h3>
+        <p>Safe, low-pressure cleaning that removes moss, algae, and streaks without damage.</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon"><i class="ti ti-fence" aria-hidden="true"></i></div>
+        <h3>Fences &amp; Retaining Walls</h3>
+        <p>Wood, vinyl, chain link — cleaned up and looking new again.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="section-inner">
+    <div class="about-grid">
+      <div>
+        <div class="section-label">Who We Are</div>
+        <h2 class="section-title">Your Neighbors. Your Crew.</h2>
+        <p class="section-sub">Good Day Services is a locally owned pressure washing company proud to serve Middle Tennessee. We're the same team behind All Clean Power Wash — trusted by hundreds of homeowners and businesses across the area.</p>
+        <ul class="about-list">
+          <li><i class="ti ti-check" aria-hidden="true"></i>Fully insured and licensed</li>
+          <li><i class="ti ti-check" aria-hidden="true"></i>Eco-friendly, biodegradable cleaning solutions</li>
+          <li><i class="ti ti-check" aria-hidden="true"></i>Free, no-pressure estimates — same day available</li>
+          <li><i class="ti ti-check" aria-hidden="true"></i>100% satisfaction guaranteed</li>
+          <li><i class="ti ti-check" aria-hidden="true"></i>Serving Nashville, Brentwood, Franklin, Murfreesboro &amp; beyond</li>
+        </ul>
+      </div>
+      <div class="about-visual">
+        <i class="ti ti-droplet" aria-hidden="true"></i>
+        <span>Good Day Services HQ</span>
+        <span style="font-size:.78rem;color:#7FA8C4">Smyrna, TN — Middle Tennessee</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- GALLERY -->
+<section id="gallery">
+  <div class="section-inner">
+    <div class="section-label">Our Work</div>
+    <h2 class="section-title">Before &amp; After</h2>
+    <p class="section-sub">Real results from real jobs. More photos coming as we complete new projects.</p>
+    <div class="gallery-grid">
+      <div class="gallery-card">
+        <div class="gallery-img gallery-before"><i class="ti ti-photo" aria-hidden="true"></i>Driveway Before</div>
+        <div class="gallery-label"><span class="tag tag-before">Before</span> Driveway</div>
+      </div>
+      <div class="gallery-card">
+        <div class="gallery-img gallery-after"><i class="ti ti-photo" aria-hidden="true"></i>Driveway After</div>
+        <div class="gallery-label"><span class="tag tag-after">After</span> Driveway</div>
+      </div>
+      <div class="gallery-card">
+        <div class="gallery-img gallery-before"><i class="ti ti-photo" aria-hidden="true"></i>Deck Before</div>
+        <div class="gallery-label"><span class="tag tag-before">Before</span> Deck</div>
+      </div>
+      <div class="gallery-card">
+        <div class="gallery-img gallery-after"><i class="ti ti-photo" aria-hidden="true"></i>Deck After</div>
+        <div class="gallery-label"><span class="tag tag-after">After</span> Deck</div>
+      </div>
+      <div class="gallery-card">
+        <div class="gallery-img gallery-before"><i class="ti ti-photo" aria-hidden="true"></i>House Wash Before</div>
+        <div class="gallery-label"><span class="tag tag-before">Before</span> Exterior</div>
+      </div>
+      <div class="gallery-card">
+        <div class="gallery-img gallery-after"><i class="ti ti-photo" aria-hidden="true"></i>House Wash After</div>
+        <div class="gallery-label"><span class="tag tag-after">After</span> Exterior</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BAND -->
+<div class="cta-band">
+  <h2>Ready for a Good Day?</h2>
+  <p>Get a free estimate — no obligation, no hassle. We'll get back to you same day.</p>
+  <a href="#contact" class="btn-white">Request My Free Quote</a>
+</div>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="section-inner">
+    <div class="section-label">Get In Touch</div>
+    <h2 class="section-title">Request a Free Quote</h2>
+    <p class="section-sub">Fill out the form or give us a call. We'll get back to you fast.</p>
+    <div class="contact-grid">
+      <div class="contact-info">
+        <div class="contact-item">
+          <i class="ti ti-phone" aria-hidden="true"></i>
+          <div><strong>Phone</strong><span>(615) 390-9779</span></div>
+        </div>
+        <div class="contact-item">
+          <i class="ti ti-mail" aria-hidden="true"></i>
+          <div><strong>Email</strong><span>Blake@gooddaypressurewashing.com</span></div>
+        </div>
+        <div class="contact-item">
+          <i class="ti ti-map-pin" aria-hidden="true"></i>
+          <div><strong>Service Area</strong><span>Nashville, Brentwood, Franklin, Murfreesboro, Smyrna &amp; surrounding Middle Tennessee</span></div>
+        </div>
+        <div class="contact-item">
+          <i class="ti ti-clock" aria-hidden="true"></i>
+          <div><strong>Hours</strong><span>Mon–Sat: 7am–6pm<br>Sunday: By appointment</span></div>
+        </div>
+      </div>
+      <div class="contact-form">
+        <div class="form-row">
+          <div class="form-group"><label>First Name</label><input type="text" placeholder="Blake"></div>
+          <div class="form-group"><label>Last Name</label><input type="text" placeholder="Smith"></div>
+        </div>
+        <div class="form-group"><label>Phone Number</label><input type="tel" placeholder="(615) 390-9779"></div>
+        <div class="form-group"><label>Email Address</label><input type="email" placeholder="you@email.com"></div>
+        <div class="form-group">
+          <label>Service Needed</label>
+          <select>
+            <option value="">Select a service…</option>
+            <option>Residential Exterior Wash</option>
+            <option>Driveway &amp; Sidewalk</option>
+            <option>Deck &amp; Patio</option>
+            <option>Commercial Property</option>
+            <option>Roof Soft Wash</option>
+            <option>Fence &amp; Retaining Wall</option>
+            <option>Paver Restoration</option>
+            <option>Other / Multiple</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Message (optional)</label><textarea placeholder="Tell us a little about your property or what needs cleaning…"></textarea></div>
+        <button class="submit-btn">Send My Request →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Good Day <span>Services</span></div>
+  <p class="footer-tagline">Pressure Washing · Paver Restoration · Middle Tennessee</p>
+  <div class="footer-links">
+    <a href="#services">Services</a>
+    <a href="#about">About</a>
+    <a href="#gallery">Gallery</a>
+    <a href="#contact">Contact</a>
+  </div>
+  <p class="footer-copy">© 2026 Good Day Services. All rights reserved. Affiliated with All Clean Power Wash.</p>
+</footer>
+
+</body>
+</html>

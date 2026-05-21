@@ -460,7 +460,7 @@ export default function PropertyCleaningQuote() {
                                 <FormItem>
                                   <FormLabel>Phone Number</FormLabel>
                                   <FormControl>
-                                    <Input {...field} placeholder="(615) 555-0100" data-testid="input-phone" />
+                                    <Input {...field} placeholder="(615) 390-9779" data-testid="input-phone" />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>

@@ -115,7 +115,7 @@ export function CustomerInquiryForm() {
                 <Mail className="mt-1 h-5 w-5 text-primary" />
                 <div>
                   <p className="font-medium">Email Us</p>
-                  <p className="text-sm text-muted-foreground">GoodDayServicesHQ@gmail.com</p>
+                  <p className="text-sm text-muted-foreground">Blake@gooddaypressurewashing.com</p>
                   <p className="text-xs text-muted-foreground">We respond within 24 hours</p>
                 </div>
               </div>
@@ -206,7 +206,7 @@ export function CustomerInquiryForm() {
                         <FormControl>
                           <Input 
                             type="tel" 
-                            placeholder="(615) 555-0123" 
+                            placeholder="(615) 390-9779"
                             {...field}
                             data-testid="input-phone" 
                           />
