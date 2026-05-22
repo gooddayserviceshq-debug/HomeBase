@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
-import { Menu, X, LogIn, LogOut } from "lucide-react";
+import { Menu, X, LogIn, LogOut, Gamepad2 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -48,6 +48,16 @@ export function Header() {
             </Link>
             <Link href="/contact" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/contact" ? "text-foreground" : "text-muted-foreground"}`}>
               Contact
+            </Link>
+            <Link
+              href="/game"
+              className={`text-sm font-semibold transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-full
+                ${location === "/game"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-primary/10 text-primary hover:bg-primary/20"}`}
+            >
+              <Gamepad2 className="h-3.5 w-3.5" />
+              HomeHero
             </Link>
             {isAuthenticated && (
               <Link href="/admin" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/admin" ? "text-foreground" : "text-muted-foreground"}`}>
@@ -140,6 +150,12 @@ export function Header() {
             <Link href="/contact" onClick={() => setMobileMenuOpen(false)}>
               <Button variant="ghost" className="w-full justify-start" data-testid="link-mobile-contact">
                 Contact
+              </Button>
+            </Link>
+            <Link href="/game" onClick={() => setMobileMenuOpen(false)}>
+              <Button variant="ghost" className="w-full justify-start font-semibold text-primary" data-testid="link-mobile-game">
+                <Gamepad2 className="h-4 w-4 mr-2" />
+                HomeHero — Fix It Game
               </Button>
             </Link>
             {isAuthenticated && (

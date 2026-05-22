@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { sendEmail } from "./sendEmail";
 import { z } from "zod";
+import { diagnoseHomeProblem } from "./aiService";
 import { 
   quoteCalculationSchema,
   insertQuoteRequestSchema,
@@ -959,6 +960,33 @@ ${validatedData.message}
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete product" });
+    }
+  });
+
+  // HomeHero Game: AI-powered home problem diagnosis
+  app.post("/api/game/diagnose", async (req, res) => {
+    try {
+      const { imageBase64, mimeType, problemDescription, playerRole } = req.body;
+
+      if (!imageBase64 || !mimeType || !problemDescription || !playerRole) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      if (!["renter", "homeowner"].includes(playerRole)) {
+        return res.status(400).json({ error: "playerRole must be renter or homeowner" });
+      }
+
+      const diagnosis = await diagnoseHomeProblem(
+        imageBase64,
+        mimeType,
+        problemDescription,
+        playerRole as "renter" | "homeowner"
+      );
+
+      res.json(diagnosis);
+    } catch (error: any) {
+      console.error("AI diagnosis error:", error);
+      res.status(500).json({ error: "Diagnosis failed", message: error.message });
     }
   });
 
