@@ -16,6 +16,7 @@ import Warranties from "@/pages/warranties";
 import Contact from "@/pages/Contact";
 import AdminDashboard from "@/pages/admin/dashboard";
 import CEODashboard from "@/pages/ceo-dashboard";
+import AdventureGame from "@/pages/adventure-game";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/contact" component={Contact} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/ceo-dashboard" component={CEODashboard} />
+      <Route path="/game" component={AdventureGame} />
       <Route component={NotFound} />
     </Switch>
   );
