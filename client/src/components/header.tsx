@@ -51,13 +51,10 @@ export function Header() {
             </Link>
             <Link
               href="/game"
-              className={`text-sm font-semibold transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-full
-                ${location === "/game"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-primary/10 text-primary hover:bg-primary/20"}`}
+              className="flex items-center gap-2 px-4 py-2 font-medium text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-md transition-colors text-sm"
             >
-              <Gamepad2 className="h-3.5 w-3.5" />
-              HomeHero
+              <Gamepad2 className="w-4 h-4" />
+              Play Game
             </Link>
             {isAuthenticated && (
               <Link href="/admin" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/admin" ? "text-foreground" : "text-muted-foreground"}`}>
@@ -153,9 +150,9 @@ export function Header() {
               </Button>
             </Link>
             <Link href="/game" onClick={() => setMobileMenuOpen(false)}>
-              <Button variant="ghost" className="w-full justify-start font-semibold text-primary" data-testid="link-mobile-game">
+              <Button variant="ghost" className="w-full justify-start font-semibold text-orange-600" data-testid="link-mobile-game">
                 <Gamepad2 className="h-4 w-4 mr-2" />
-                HomeHero — Fix It Game
+                Play Game
               </Button>
             </Link>
             {isAuthenticated && (
