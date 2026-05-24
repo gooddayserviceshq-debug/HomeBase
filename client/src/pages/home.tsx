@@ -10,6 +10,7 @@ import BeforeImage from '@assets/stock_images/dirty_stained_weathe_074e60af.jpg'
 import AfterImage from '@assets/stock_images/clean_restored_concr_47aaa0e2.jpg';
 import PatioImage from '@assets/stock_images/patio_pavers_outdoor_ee2162b8.jpg';
 import WalkwayImage from '@assets/stock_images/brick_walkway_pathwa_409e0845.jpg';
+import HeroImage from '@assets/generated_images/Pressure_washed_home_hero_0686183a.png';
 
 export default function Home() {
   const [scrollY, setScrollY] = useState(0);
@@ -95,43 +96,41 @@ export default function Home() {
     <div className="min-h-screen overflow-hidden">
       {/* Cinematic Hero Section with Parallax */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
-        {/* Video Background Placeholder */}
+        {/* Hero Background Image with Parallax */}
         <div className="absolute inset-0 z-0">
-          <div 
-            className="absolute inset-0 bg-gradient-to-b from-primary/20 via-primary/10 to-background"
-            style={{ transform: `translateY(${scrollY * 0.5}px)` }}
+          <img
+            src={HeroImage}
+            alt="Professional pressure washing service"
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ transform: `translateY(${scrollY * 0.3}px) scale(1.1)` }}
           />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent" />
-        </div>
-        
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 z-0">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse delay-700" />
+          {/* Dark gradient overlay for text legibility */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-background" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30" />
         </div>
 
         {/* Hero Content */}
         <div className="container mx-auto max-w-7xl px-4 relative z-10">
           <div className="text-center space-y-8">
             {/* Trust Badge */}
-            <div className="inline-flex items-center gap-2 bg-background/80 backdrop-blur-sm border px-4 py-2 rounded-full animate-fade-in">
-              <Sparkles className="h-4 w-4 text-primary animate-pulse" />
-              <span className="text-sm font-medium">Trusted by 500+ Homeowners in Middle Tennessee</span>
+            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-2 rounded-full animate-fade-in">
+              <Sparkles className="h-4 w-4 text-white animate-pulse" />
+              <span className="text-sm font-medium text-white">Trusted by 500+ Homeowners in Middle Tennessee</span>
             </div>
 
             {/* Main Headline with Animation */}
             <h1 className="text-5xl md:text-7xl font-bold leading-tight animate-fade-in-up" data-testid="text-hero-title">
-              <span className="bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+              <span className="text-white drop-shadow-lg">
                 Transform Your
               </span>
               <br />
-              <span className="bg-gradient-to-r from-primary via-primary to-primary/70 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-300 via-white to-blue-200 bg-clip-text text-transparent drop-shadow-lg">
                 Outdoor Spaces
               </span>
             </h1>
 
             {/* Subheadline */}
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto animate-fade-in-up delay-100">
+            <p className="text-xl md:text-2xl text-white/80 max-w-3xl mx-auto animate-fade-in-up delay-100">
               Professional paver restoration that brings your driveways, patios, and walkways back to life with lasting protection
             </p>
 
@@ -154,8 +153,8 @@ export default function Home() {
             <div className="flex items-center justify-center gap-8 pt-8 animate-fade-in-up delay-300">
               <div className="flex -space-x-2">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <Avatar key={i} className="border-2 border-background">
-                    <AvatarFallback className="bg-primary/10 text-xs">C{i}</AvatarFallback>
+                  <Avatar key={i} className="border-2 border-white/50">
+                    <AvatarFallback className="bg-white/20 text-white text-xs">C{i}</AvatarFallback>
                   </Avatar>
                 ))}
               </div>
@@ -163,7 +162,7 @@ export default function Home() {
                 {[1, 2, 3, 4, 5].map((i) => (
                   <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
                 ))}
-                <span className="ml-2 text-sm font-medium">5.0 Rating</span>
+                <span className="ml-2 text-sm font-medium text-white">5.0 Rating</span>
               </div>
             </div>
           </div>
@@ -171,7 +170,7 @@ export default function Home() {
 
         {/* Scroll Indicator */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-          <ChevronRight className="h-8 w-8 text-muted-foreground rotate-90" />
+          <ChevronRight className="h-8 w-8 text-white/70 rotate-90" />
         </div>
       </section>
 

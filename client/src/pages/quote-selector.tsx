@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Droplets, Home, Calculator, CheckCircle2 } from "lucide-react";
+import sampleQuoteImg from "@assets/IMG_2219_1761232978605.jpeg";
 
 export default function QuoteSelector() {
   return (
@@ -136,14 +137,29 @@ export default function QuoteSelector() {
           </Card>
         </div>
 
-        <div className="mt-12 text-center">
-          <p className="text-muted-foreground">
-            Not sure which service you need? Call us at{" "}
-            <a href="tel:615-555-0100" className="font-semibold text-primary hover:underline">
-              (615) 555-0100
-            </a>{" "}
-            for a free consultation
-          </p>
+        {/* Sample quote social proof */}
+        <div className="mt-14 flex flex-col md:flex-row items-center gap-8 bg-muted/40 rounded-2xl p-8">
+          <div className="w-full md:w-72 shrink-0">
+            <img
+              src={sampleQuoteImg}
+              alt="Sample Good Day Services quote"
+              className="rounded-xl shadow-lg w-full"
+            />
+          </div>
+          <div className="space-y-3 text-center md:text-left">
+            <Badge variant="outline">Real Quote Example</Badge>
+            <h3 className="text-2xl font-bold">Here's what you'll receive</h3>
+            <p className="text-muted-foreground">
+              After submitting your details, we send a clear, itemized quote just like this one — no hidden fees, no surprises. Most quotes are ready within 24 hours.
+            </p>
+            <p className="text-muted-foreground">
+              Not sure which service you need? Call us at{" "}
+              <a href="tel:6153909779" className="font-semibold text-primary hover:underline">
+                615-390-9779
+              </a>{" "}
+              for a free consultation.
+            </p>
+          </div>
         </div>
       </div>
     </div>
