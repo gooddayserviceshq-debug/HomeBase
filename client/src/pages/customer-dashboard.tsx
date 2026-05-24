@@ -5,12 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GoogleReviewGenerator } from "@/components/google-review-generator";
-import { 
+import {
   Calendar,
   Clock,
   MapPin,
   FileText,
-  Plus
+  Plus,
+  CalendarCheck,
+  Droplets,
 } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
@@ -57,40 +59,60 @@ export default function CustomerDashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-background py-12">
-      <div className="max-w-6xl mx-auto px-4 md:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">My Appointments</h1>
-          <p className="text-muted-foreground">View and manage your pressure washing services</p>
+    <div className="min-h-screen bg-background">
+      {/* Page header band */}
+      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-10">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="h-10 w-10 rounded-xl bg-primary/15 flex items-center justify-center">
+              <CalendarCheck className="h-5 w-5 text-primary" />
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold">My Appointments</h1>
+          </div>
+          <p className="text-muted-foreground ml-13">Track and manage your Good Day Pressure Washing bookings</p>
         </div>
+      </div>
 
+      <div className="max-w-6xl mx-auto px-4 md:px-8 py-12">
         {!searchEmail ? (
-          <Card className="max-w-md mx-auto">
-            <CardHeader>
-              <CardTitle>Access Your Appointments</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSearch} className="space-y-4">
-                <div>
-                  <Label htmlFor="email">Enter your email address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="your.email@example.com"
-                    value={customerEmail}
-                    onChange={(e) => setCustomerEmail(e.target.value)}
-                    required
-                    data-testid="input-customer-email"
-                  />
-                </div>
-                <Button type="submit" className="w-full" data-testid="button-view-appointments">
-                  View My Appointments
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+          <div className="max-w-lg mx-auto">
+            <div className="text-center mb-8">
+              <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 mb-4">
+                <Droplets className="h-10 w-10 text-primary" />
+              </div>
+              <h2 className="text-2xl font-semibold mb-2">Find Your Bookings</h2>
+              <p className="text-muted-foreground">Enter the email address you used when booking to view your service history and upcoming appointments.</p>
+            </div>
+            <Card className="shadow-lg border-0 ring-1 ring-border/50">
+              <CardContent className="pt-6">
+                <form onSubmit={handleSearch} className="space-y-4">
+                  <div>
+                    <Label htmlFor="email" className="text-sm font-medium">Email address</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="your.email@example.com"
+                      value={customerEmail}
+                      onChange={(e) => setCustomerEmail(e.target.value)}
+                      required
+                      className="mt-1.5 h-11"
+                      data-testid="input-customer-email"
+                    />
+                  </div>
+                  <Button type="submit" className="w-full h-11 gap-2" data-testid="button-view-appointments">
+                    <CalendarCheck className="h-4 w-4" />
+                    View My Appointments
+                  </Button>
+                  <p className="text-xs text-center text-muted-foreground">
+                    New customer?{" "}
+                    <Link href="/book" className="text-primary hover:underline font-medium">Book your first service →</Link>
+                  </p>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-8 max-w-6xl">
             <div className="flex justify-between items-center">
               <p className="text-muted-foreground">
                 Showing appointments for: <span className="font-semibold text-foreground">{searchEmail}</span>
@@ -234,3 +256,4 @@ export default function CustomerDashboard() {
     </div>
   );
 }
+

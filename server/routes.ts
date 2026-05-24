@@ -3,14 +3,15 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { sendEmail } from "./sendEmail";
+import { sendEmail, sendBookingConfirmationEmail } from "./sendEmail";
+import { createBookingCalendarEvent } from "./calendarService";
 import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
 
-const GDS_SYSTEM_PROMPT = `You are the AI receptionist for Good Day Services (GDS), a professional outdoor cleaning and restoration company based in the Murfreesboro, Tennessee area. You are friendly, helpful, and knowledgeable about all GDS services.
+const GDS_SYSTEM_PROMPT = `You are the AI receptionist for Good Day Pressure Washing (GDS), a professional outdoor cleaning and restoration company based in the Murfreesboro, Tennessee area. You are friendly, helpful, and knowledgeable about all GDS services.
 
-## About Good Day Services
-Good Day Services specializes in two main service categories:
+## About Good Day Pressure Washing
+Good Day Pressure Washing specializes in two main service categories:
 
 ### 1. Paver & Surface Restoration
 We restore driveways, patios, walkways, and pool decks made of:
@@ -670,7 +671,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         if (sendEmail && process.env.SENDGRID_API_KEY) {
           await sendEmail({
-            to: "GoodDayServicesHQ@gmail.com",
+            to: "hello@gooddaypressurewashing.com",
             subject: `New Customer Inquiry: ${validatedData.inquiryType}`,
             text: `
 New customer inquiry received:
@@ -1048,7 +1049,7 @@ ${validatedData.message}
       all: "Full-service outdoor cleaning and restoration: paver restoration, property cleaning, and professional products for Middle Tennessee homeowners.",
     };
 
-    const systemPrompt = `You are a professional copywriter for Good Day Services (GDS), a pressure washing and paver restoration company in Murfreesboro, Tennessee. Their tagline is "Bringing a Shine to Your Home." Phone: 615-390-9779. Website: gooddayservices.com.
+    const systemPrompt = `You are a professional copywriter for Good Day Pressure Washing (GDS), a pressure washing and paver restoration company in Murfreesboro, Tennessee. Their tagline is "Bringing a Shine to Your Home." Phone: 615-390-9779. Website: gooddaypressurewashing.com.
 
 Write advertising copy that is compelling, benefit-focused, and authentic. Avoid generic AI filler phrases. Use concrete details (sq ft pricing, years of protection, specific surfaces).
 
@@ -1123,9 +1124,46 @@ Follow the platform format requirements exactly. Make each variation feel distin
     if (!customer || !booking) {
       return res.status(400).json({ error: "customer and booking are required" });
     }
+    // Validate service exists before writing
+    const service = await storage.getService(booking.serviceId);
+    if (!service) {
+      return res.status(400).json({ error: "Invalid serviceId" });
+    }
     try {
       const result = await storage.createBooking(customer, booking);
-      res.json({ bookingId: result.booking.id, bookingNumber: result.bookingNumber });
+      const { booking: saved, bookingNumber } = result;
+
+      // Fire notifications in the background – don't block the response
+      Promise.allSettled([
+        sendBookingConfirmationEmail({
+          customerName: customer.name,
+          customerEmail: customer.email,
+          bookingNumber,
+          serviceName: service.name,
+          scheduledDate: new Date(saved.scheduledDate),
+          address: customer.address,
+          totalPrice: saved.totalPrice,
+          specialInstructions: saved.specialInstructions,
+        }),
+        createBookingCalendarEvent({
+          bookingNumber,
+          customerName: customer.name,
+          customerEmail: customer.email,
+          customerPhone: customer.phone,
+          serviceName: service.name,
+          address: customer.address,
+          scheduledDate: new Date(saved.scheduledDate),
+          totalPrice: saved.totalPrice,
+          squareFootage: saved.squareFootage,
+          specialInstructions: saved.specialInstructions,
+        }),
+      ]).then((results) => {
+        results.forEach((r) => {
+          if (r.status === "rejected") console.error("[booking notifications]", r.reason);
+        });
+      });
+
+      res.json({ bookingId: saved.id, bookingNumber });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to create booking" });
     }

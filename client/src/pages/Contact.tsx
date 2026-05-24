@@ -7,7 +7,7 @@ export default function Contact() {
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl font-bold mb-4">Contact Us</h1>
           <p className="text-xl max-w-2xl mx-auto">
-            Get in touch with Good Day Services for all your pressure washing and property cleaning needs
+            Get in touch with Good Day Pressure Washing for all your pressure washing and property cleaning needs
           </p>
         </div>
       </div>

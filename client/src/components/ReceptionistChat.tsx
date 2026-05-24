@@ -15,7 +15,7 @@ export function ReceptionistChat() {
     {
       role: "assistant",
       content:
-        "Hi there! 👋 I'm the Good Day Services AI receptionist. How can I help you today? Ask me about our pressure washing, paver restoration, or property cleaning services!",
+        "Hi there! 👋 I'm the Good Day Pressure Washing AI receptionist. How can I help you today? Ask me about our pressure washing, paver restoration, or property cleaning services!",
     },
   ]);
   const [input, setInput] = useState("");
@@ -142,7 +142,7 @@ export function ReceptionistChat() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm leading-tight">GDS Receptionist</p>
-              <p className="text-xs text-blue-100">Good Day Services · AI assistant</p>
+              <p className="text-xs text-blue-100">Good Day Pressure Washing · AI assistant</p>
             </div>
             <button
               onClick={() => setOpen(false)}
