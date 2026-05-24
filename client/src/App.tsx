@@ -19,6 +19,7 @@ import AdminDashboard from "@/pages/admin/dashboard";
 import CEODashboard from "@/pages/ceo-dashboard";
 import Book from "@/pages/book";
 import CustomerDashboard from "@/pages/customer-dashboard";
+import Andromada from "@/pages/andromada";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/my-appointments" component={CustomerDashboard} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/ceo-dashboard" component={CEODashboard} />
+      <Route path="/andromada" component={Andromada} />
       <Route component={NotFound} />
     </Switch>
   );
