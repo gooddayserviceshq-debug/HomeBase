@@ -3,7 +3,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { sendEmail } from "./sendEmail";
+import { sendEmail, sendBookingConfirmationEmail } from "./sendEmail";
+import { createBookingCalendarEvent } from "./calendarService";
 import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
 
@@ -1123,9 +1124,46 @@ Follow the platform format requirements exactly. Make each variation feel distin
     if (!customer || !booking) {
       return res.status(400).json({ error: "customer and booking are required" });
     }
+    // Validate service exists before writing
+    const service = await storage.getService(booking.serviceId);
+    if (!service) {
+      return res.status(400).json({ error: "Invalid serviceId" });
+    }
     try {
       const result = await storage.createBooking(customer, booking);
-      res.json({ bookingId: result.booking.id, bookingNumber: result.bookingNumber });
+      const { booking: saved, bookingNumber } = result;
+
+      // Fire notifications in the background – don't block the response
+      Promise.allSettled([
+        sendBookingConfirmationEmail({
+          customerName: customer.name,
+          customerEmail: customer.email,
+          bookingNumber,
+          serviceName: service.name,
+          scheduledDate: new Date(saved.scheduledDate),
+          address: customer.address,
+          totalPrice: saved.totalPrice,
+          specialInstructions: saved.specialInstructions,
+        }),
+        createBookingCalendarEvent({
+          bookingNumber,
+          customerName: customer.name,
+          customerEmail: customer.email,
+          customerPhone: customer.phone,
+          serviceName: service.name,
+          address: customer.address,
+          scheduledDate: new Date(saved.scheduledDate),
+          totalPrice: saved.totalPrice,
+          squareFootage: saved.squareFootage,
+          specialInstructions: saved.specialInstructions,
+        }),
+      ]).then((results) => {
+        results.forEach((r) => {
+          if (r.status === "rejected") console.error("[booking notifications]", r.reason);
+        });
+      });
+
+      res.json({ bookingId: saved.id, bookingNumber });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to create booking" });
     }
