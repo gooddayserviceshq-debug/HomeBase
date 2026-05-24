@@ -1010,6 +1010,92 @@ ${validatedData.message}
     }
   });
 
+  // AI Advertising generator endpoint (streaming)
+  app.post("/api/advertising/generate", async (req, res) => {
+    const { platform, service, audience, offer, tone } = req.body;
+
+    if (!platform || !service) {
+      return res.status(400).json({ error: "platform and service are required" });
+    }
+
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return res.status(503).json({ error: "AI generator not configured" });
+    }
+
+    const platformGuides: Record<string, string> = {
+      facebook:
+        "Facebook/Instagram ad (primary text ≤125 words, headline ≤27 chars, description ≤27 chars). Include relevant emojis. Add 3–5 hashtags at the end.",
+      google:
+        "Google Search Ad with 3 headlines (≤30 chars each), 2 descriptions (≤90 chars each), and a display URL path.",
+      email:
+        "Email campaign with a subject line (≤60 chars), preview text (≤90 chars), and body copy (2–3 short paragraphs plus a clear CTA button label).",
+      sms:
+        "SMS/text message ad (≤160 chars). Clear offer, CTA, and opt-out mention: 'Reply STOP to opt out'.",
+      nextdoor:
+        "Nextdoor neighborhood post (friendly, local tone, ≤200 words). Mention the Middle Tennessee area. No hard sales language.",
+      flyer:
+        "Print/digital flyer copy with a bold headline, 3 bullet points of benefits, pricing teaser, and contact CTA.",
+    };
+
+    const serviceInfo: Record<string, string> = {
+      restoration:
+        "Paver & Surface Restoration — deep cleaning, polymeric sand, sealing (Basic/Recommended/Premium tiers). Driveways, patios, walkways, pool decks. Results last 5–7 years.",
+      cleaning:
+        "Complete Property Cleaning — driveway, roof (soft wash), house siding, gutters, fence. Minimum $975 service charge. One visit covers the whole exterior.",
+      products:
+        "Professional-grade restoration and cleaning products available in our online store — the same products our crews use.",
+      all: "Full-service outdoor cleaning and restoration: paver restoration, property cleaning, and professional products for Middle Tennessee homeowners.",
+    };
+
+    const systemPrompt = `You are a professional copywriter for Good Day Services (GDS), a pressure washing and paver restoration company in Murfreesboro, Tennessee. Their tagline is "Bringing a Shine to Your Home." Phone: 615-390-9779. Website: gooddayservices.com.
+
+Write advertising copy that is compelling, benefit-focused, and authentic. Avoid generic AI filler phrases. Use concrete details (sq ft pricing, years of protection, specific surfaces).
+
+Always generate exactly 3 distinct variations labeled **Variation 1**, **Variation 2**, **Variation 3**. Each should take a meaningfully different angle or hook.`;
+
+    const userPrompt = `Generate 3 ad variations for the following campaign:
+
+Platform: ${platformGuides[platform] || platform}
+Service: ${serviceInfo[service] || service}
+Target Audience: ${audience || "Homeowners in Middle Tennessee"}
+Tone: ${tone || "Professional and friendly"}${offer ? `\nSpecial Offer: ${offer}` : ""}
+
+Follow the platform format requirements exactly. Make each variation feel distinct — different opening hook, angle, or emotional appeal.`;
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+
+    try {
+      const anthropic = new Anthropic({ apiKey });
+      const stream = anthropic.messages.stream({
+        model: "claude-opus-4-7",
+        max_tokens: 1500,
+        thinking: { type: "adaptive" },
+        system: systemPrompt,
+        messages: [{ role: "user", content: userPrompt }],
+      });
+
+      for await (const event of stream) {
+        if (
+          event.type === "content_block_delta" &&
+          event.delta.type === "text_delta"
+        ) {
+          res.write(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`);
+        }
+      }
+
+      res.write("data: [DONE]\n\n");
+    } catch (error: any) {
+      res.write(
+        `data: ${JSON.stringify({ error: error.message || "Generation failed" })}\n\n`
+      );
+    } finally {
+      res.end();
+    }
+  });
+
   // AI Receptionist chat endpoint (streaming)
   app.post("/api/receptionist/chat", async (req, res) => {
     const { messages } = req.body;

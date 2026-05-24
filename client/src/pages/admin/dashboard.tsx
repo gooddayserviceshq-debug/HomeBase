@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import type { Product, Order, Category } from "@shared/schema";
+import { AdvertisingBuilder } from "@/components/AdvertisingBuilder";
 
 interface OrderWithDetails extends Order {
   items: any[];
@@ -241,6 +242,7 @@ export default function AdminDashboard() {
           <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
           <TabsTrigger value="products" data-testid="tab-products">Products</TabsTrigger>
           <TabsTrigger value="orders" data-testid="tab-orders">Orders</TabsTrigger>
+          <TabsTrigger value="advertising" data-testid="tab-advertising">Advertising</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -404,6 +406,11 @@ export default function AdminDashboard() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Advertising Tab */}
+        <TabsContent value="advertising" className="mt-0">
+          <AdvertisingBuilder />
         </TabsContent>
 
         {/* Orders Tab */}
