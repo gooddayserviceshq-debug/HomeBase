@@ -26,7 +26,7 @@ export default function CustomerDashboard() {
   const [searchEmail, setSearchEmail] = useState("");
 
   const { data: bookings = [], isLoading } = useQuery<BookingWithDetails[]>({
-    queryKey: ["/api/bookings/customer", searchEmail],
+    queryKey: ["/api/bookings/customer", encodeURIComponent(searchEmail)],
     enabled: !!searchEmail,
   });
 

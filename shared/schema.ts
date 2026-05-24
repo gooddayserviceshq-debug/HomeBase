@@ -355,6 +355,77 @@ export const propertyCleaningCalculationSchema = z.object({
 
 export type PropertyCleaningCalculation = z.infer<typeof propertyCleaningCalculationSchema>;
 
+// Booking System Tables
+export const services = pgTable("services", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  basePrice: decimal("base_price", { precision: 10, scale: 2 }).notNull(),
+  pricePerSqFt: decimal("price_per_sq_ft", { precision: 10, scale: 4 }).notNull(),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const customers = pgTable("customers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone").notNull(),
+  address: text("address").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const bookings = pgTable("bookings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  bookingNumber: text("booking_number").notNull().unique(),
+  customerId: varchar("customer_id").references(() => customers.id).notNull(),
+  serviceId: varchar("service_id").references(() => services.id).notNull(),
+  squareFootage: integer("square_footage").notNull(),
+  totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
+  scheduledDate: timestamp("scheduled_date").notNull(),
+  status: text("status").notNull().default("scheduled"),
+  specialInstructions: text("special_instructions"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertServiceSchema = createInsertSchema(services).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCustomerSchema = createInsertSchema(customers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertBookingSchema = createInsertSchema(bookings).omit({
+  id: true,
+  bookingNumber: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type Service = typeof services.$inferSelect;
+export type InsertService = z.infer<typeof insertServiceSchema>;
+
+export type Customer = typeof customers.$inferSelect;
+export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
+
+export type Booking = typeof bookings.$inferSelect;
+export type InsertBooking = z.infer<typeof insertBookingSchema>;
+
+export type BookingQuoteResponse = {
+  totalPrice: number;
+  basePrice: number;
+  areaPrice: number;
+  squareFootage: number;
+};
+
 // Customer Inquiry Schema
 export const customerInquiries = pgTable("customer_inquiries", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

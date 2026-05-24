@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, Loader2, Bot } from "lucide-react";
+import { MessageCircle, X, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import mascotUrl from "@assets/GoodDayMascot_1761233149884.jpeg";
 
 interface Message {
   role: "user" | "assistant";
@@ -120,10 +121,14 @@ export function ReceptionistChat() {
       {/* Floating toggle button */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg flex items-center justify-center transition-colors"
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg flex items-center justify-center transition-colors overflow-hidden"
         aria-label={open ? "Close chat" : "Open chat"}
       >
-        {open ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
+        {open ? (
+          <X className="w-6 h-6" />
+        ) : (
+          <img src={mascotUrl} alt="GDS mascot" className="w-full h-full object-cover" />
+        )}
       </button>
 
       {/* Chat panel */}
@@ -132,8 +137,8 @@ export function ReceptionistChat() {
           style={{ maxHeight: "70vh" }}>
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 bg-blue-600 text-white">
-            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-              <Bot className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white/30">
+              <img src={mascotUrl} alt="GDS mascot" className="w-full h-full object-cover" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm leading-tight">GDS Receptionist</p>

@@ -1,5 +1,5 @@
-import { 
-  type QuoteRequest, 
+import {
+  type QuoteRequest,
   type InsertQuoteRequest,
   type User,
   type UpsertUser,
@@ -21,6 +21,12 @@ import {
   type InsertPropertyCleaningQuote,
   type CustomerInquiry,
   type InsertCustomerInquiry,
+  type Service,
+  type InsertService,
+  type Customer,
+  type InsertCustomer,
+  type Booking,
+  type InsertBooking,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -90,6 +96,20 @@ export interface IStorage {
   getCustomerInquiries(): Promise<CustomerInquiry[]>;
   getCustomerInquiry(id: string): Promise<CustomerInquiry | undefined>;
   createCustomerInquiry(inquiry: InsertCustomerInquiry): Promise<CustomerInquiry>;
+
+  // Service operations
+  getServices(): Promise<Service[]>;
+  getService(id: string): Promise<Service | undefined>;
+
+  // Customer (booking) operations
+  getCustomerByEmail(email: string): Promise<Customer | undefined>;
+  createCustomer(customer: InsertCustomer): Promise<Customer>;
+
+  // Booking operations
+  getBookings(): Promise<(Booking & { customer: Customer; service: Service })[]>;
+  getBookingsByEmail(email: string): Promise<(Booking & { customer: Customer; service: Service })[]>;
+  createBooking(customerData: InsertCustomer, bookingData: Omit<InsertBooking, "customerId">): Promise<{ booking: Booking; bookingNumber: string }>;
+  updateBookingStatus(id: string, status: string): Promise<Booking | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -104,6 +124,9 @@ export class MemStorage implements IStorage {
   private documents: Map<string, Document>;
   private propertyCleaningQuotes: Map<string, PropertyCleaningQuote>;
   private customerInquiries: Map<string, CustomerInquiry>;
+  private services: Map<string, Service>;
+  private bookingCustomers: Map<string, Customer>;
+  private bookings: Map<string, Booking>;
 
   constructor() {
     this.quoteRequests = new Map();
@@ -117,7 +140,10 @@ export class MemStorage implements IStorage {
     this.documents = new Map();
     this.propertyCleaningQuotes = new Map();
     this.customerInquiries = new Map();
-    
+    this.services = new Map();
+    this.bookingCustomers = new Map();
+    this.bookings = new Map();
+
     // Initialize with sample products
     this.initializeSampleData();
   }
@@ -332,6 +358,51 @@ export class MemStorage implements IStorage {
     ];
     
     documents.forEach(doc => this.documents.set(doc.id, doc as Document));
+
+    // Sample services for booking system
+    const bookingServices: Service[] = [
+      {
+        id: "svc-house-siding",
+        name: "House Siding",
+        description: "Professional soft wash cleaning for vinyl, wood, and fiber cement siding.",
+        basePrice: "150.00",
+        pricePerSqFt: "0.1000",
+        active: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: "svc-driveway",
+        name: "Driveway",
+        description: "High-pressure cleaning for concrete, asphalt, and paver driveways.",
+        basePrice: "100.00",
+        pricePerSqFt: "0.1200",
+        active: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: "svc-deck-patio",
+        name: "Deck & Patio",
+        description: "Thorough cleaning for wood decks, composite decking, and paver patios.",
+        basePrice: "125.00",
+        pricePerSqFt: "0.1500",
+        active: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: "svc-roof-cleaning",
+        name: "Roof Cleaning",
+        description: "Safe soft wash treatment to remove algae, moss, and stains without damaging shingles.",
+        basePrice: "200.00",
+        pricePerSqFt: "0.2500",
+        active: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+    bookingServices.forEach(s => this.services.set(s.id, s));
   }
 
   // User operations - Referenced from Replit Auth blueprint
@@ -713,6 +784,93 @@ export class MemStorage implements IStorage {
     
     this.propertyCleaningQuotes.set(id, newQuote);
     return newQuote;
+  }
+
+  // Service operations
+  async getServices(): Promise<Service[]> {
+    return Array.from(this.services.values()).filter(s => s.active);
+  }
+
+  async getService(id: string): Promise<Service | undefined> {
+    return this.services.get(id);
+  }
+
+  // Customer (booking) operations
+  async getCustomerByEmail(email: string): Promise<Customer | undefined> {
+    return Array.from(this.bookingCustomers.values()).find(c => c.email === email);
+  }
+
+  async createCustomer(customer: InsertCustomer): Promise<Customer> {
+    const id = randomUUID();
+    const now = new Date();
+    const newCustomer: Customer = { ...customer, id, createdAt: now, updatedAt: now };
+    this.bookingCustomers.set(id, newCustomer);
+    return newCustomer;
+  }
+
+  // Booking operations
+  async getBookings(): Promise<(Booking & { customer: Customer; service: Service })[]> {
+    return Array.from(this.bookings.values())
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .map(booking => {
+        const customer = this.bookingCustomers.get(booking.customerId)!;
+        const service = this.services.get(booking.serviceId)!;
+        return { ...booking, customer, service };
+      })
+      .filter(b => b.customer && b.service);
+  }
+
+  async getBookingsByEmail(email: string): Promise<(Booking & { customer: Customer; service: Service })[]> {
+    const customer = await this.getCustomerByEmail(email);
+    if (!customer) return [];
+    return Array.from(this.bookings.values())
+      .filter(b => b.customerId === customer.id)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .map(booking => {
+        const service = this.services.get(booking.serviceId)!;
+        return { ...booking, customer, service };
+      })
+      .filter(b => b.service);
+  }
+
+  async createBooking(
+    customerData: InsertCustomer,
+    bookingData: Omit<InsertBooking, "customerId">,
+  ): Promise<{ booking: Booking; bookingNumber: string }> {
+    let customer = await this.getCustomerByEmail(customerData.email);
+    if (!customer) {
+      customer = await this.createCustomer(customerData);
+    } else {
+      // Update existing customer details
+      const updated: Customer = { ...customer, ...customerData, updatedAt: new Date() };
+      this.bookingCustomers.set(customer.id, updated);
+      customer = updated;
+    }
+
+    const id = randomUUID();
+    const bookingNumber = `BKG-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+    const now = new Date();
+    const newBooking: Booking = {
+      ...bookingData,
+      id,
+      bookingNumber,
+      customerId: customer.id,
+      status: bookingData.status ?? "scheduled",
+      specialInstructions: bookingData.specialInstructions ?? null,
+      scheduledDate: new Date(bookingData.scheduledDate),
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.bookings.set(id, newBooking);
+    return { booking: newBooking, bookingNumber };
+  }
+
+  async updateBookingStatus(id: string, status: string): Promise<Booking | undefined> {
+    const booking = this.bookings.get(id);
+    if (!booking) return undefined;
+    const updated: Booking = { ...booking, status, updatedAt: new Date() };
+    this.bookings.set(id, updated);
+    return updated;
   }
 
   // Customer Inquiry operations

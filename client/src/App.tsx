@@ -17,6 +17,8 @@ import Warranties from "@/pages/warranties";
 import Contact from "@/pages/Contact";
 import AdminDashboard from "@/pages/admin/dashboard";
 import CEODashboard from "@/pages/ceo-dashboard";
+import Book from "@/pages/book";
+import CustomerDashboard from "@/pages/customer-dashboard";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -31,6 +33,8 @@ function Router() {
       <Route path="/documents" component={Documents} />
       <Route path="/warranties" component={Warranties} />
       <Route path="/contact" component={Contact} />
+      <Route path="/book" component={Book} />
+      <Route path="/my-appointments" component={CustomerDashboard} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/ceo-dashboard" component={CEODashboard} />
       <Route component={NotFound} />
