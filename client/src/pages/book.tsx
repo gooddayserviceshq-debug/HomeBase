@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Service, QuoteResponse, InsertBooking, InsertCustomer } from "@shared/schema";
+import type { Service, BookingQuoteResponse, InsertBooking, InsertCustomer } from "@shared/schema";
 import { useLocation } from "wouter";
 
 const customerSchema = z.object({
@@ -53,7 +53,7 @@ export default function Book() {
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [quote, setQuote] = useState<QuoteResponse | null>(null);
+  const [quote, setQuote] = useState<BookingQuoteResponse | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [propertyAddress, setPropertyAddress] = useState("");
@@ -81,7 +81,7 @@ export default function Book() {
   const getQuoteMutation = useMutation({
     mutationFn: async (data: { serviceId: string; squareFootage: number }) => {
       const response = await apiRequest("POST", "/api/quotes", data);
-      return await response.json() as QuoteResponse;
+      return await response.json() as BookingQuoteResponse;
     },
     onSuccess: (data) => {
       setQuote(data);
@@ -99,7 +99,7 @@ export default function Book() {
         description: "Your appointment has been scheduled successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
-      setLocation("/customer");
+      setLocation("/my-appointments");
     },
   });
 

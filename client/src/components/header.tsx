@@ -49,6 +49,9 @@ export function Header() {
             <Link href="/contact" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/contact" ? "text-foreground" : "text-muted-foreground"}`}>
               Contact
             </Link>
+            <Link href="/my-appointments" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/my-appointments" ? "text-foreground" : "text-muted-foreground"}`}>
+              My Appointments
+            </Link>
             {isAuthenticated && (
               <Link href="/admin" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/admin" ? "text-foreground" : "text-muted-foreground"}`}>
                 Admin
@@ -92,8 +95,11 @@ export function Header() {
               </>
             )}
             
-            <Button asChild size="default" className="hidden md:flex" data-testid="button-get-quote">
+            <Button asChild size="default" variant="outline" className="hidden md:flex" data-testid="button-get-quote">
               <Link href="/quote">Get Quote</Link>
+            </Button>
+            <Button asChild size="default" className="hidden md:flex" data-testid="button-book-now">
+              <Link href="/book">Book Now</Link>
             </Button>
             
             <Button
@@ -140,6 +146,16 @@ export function Header() {
             <Link href="/contact" onClick={() => setMobileMenuOpen(false)}>
               <Button variant="ghost" className="w-full justify-start" data-testid="link-mobile-contact">
                 Contact
+              </Button>
+            </Link>
+            <Link href="/my-appointments" onClick={() => setMobileMenuOpen(false)}>
+              <Button variant="ghost" className="w-full justify-start" data-testid="link-mobile-appointments">
+                My Appointments
+              </Button>
+            </Link>
+            <Link href="/book" onClick={() => setMobileMenuOpen(false)}>
+              <Button className="w-full justify-start" data-testid="link-mobile-book">
+                Book Now
               </Button>
             </Link>
             {isAuthenticated && (

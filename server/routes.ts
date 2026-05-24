@@ -1096,6 +1096,61 @@ Follow the platform format requirements exactly. Make each variation feel distin
     }
   });
 
+  // Booking system endpoints
+  app.get("/api/services", async (req, res) => {
+    const services = await storage.getServices();
+    res.json(services);
+  });
+
+  app.post("/api/quotes", async (req, res) => {
+    const { serviceId, squareFootage } = req.body;
+    if (!serviceId || !squareFootage || squareFootage <= 0) {
+      return res.status(400).json({ error: "serviceId and squareFootage are required" });
+    }
+    const service = await storage.getService(serviceId);
+    if (!service) return res.status(404).json({ error: "Service not found" });
+
+    const basePrice = parseFloat(service.basePrice);
+    const pricePerSqFt = parseFloat(service.pricePerSqFt);
+    const areaPrice = squareFootage * pricePerSqFt;
+    const totalPrice = basePrice + areaPrice;
+
+    res.json({ totalPrice, basePrice, areaPrice, squareFootage });
+  });
+
+  app.post("/api/bookings", async (req, res) => {
+    const { customer, booking } = req.body;
+    if (!customer || !booking) {
+      return res.status(400).json({ error: "customer and booking are required" });
+    }
+    try {
+      const result = await storage.createBooking(customer, booking);
+      res.json({ bookingId: result.booking.id, bookingNumber: result.bookingNumber });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to create booking" });
+    }
+  });
+
+  app.get("/api/bookings/customer/:email", async (req, res) => {
+    const { email } = req.params;
+    const bookings = await storage.getBookingsByEmail(decodeURIComponent(email));
+    res.json(bookings);
+  });
+
+  app.get("/api/admin/bookings", async (req, res) => {
+    const bookings = await storage.getBookings();
+    res.json(bookings);
+  });
+
+  app.patch("/api/admin/bookings/:id/status", async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    if (!status) return res.status(400).json({ error: "status is required" });
+    const updated = await storage.updateBookingStatus(id, status);
+    if (!updated) return res.status(404).json({ error: "Booking not found" });
+    res.json(updated);
+  });
+
   // AI Receptionist chat endpoint (streaming)
   app.post("/api/receptionist/chat", async (req, res) => {
     const { messages } = req.body;

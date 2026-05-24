@@ -8,9 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { 
-  Plus, Package, ShoppingCart, DollarSign, Users, 
-  Edit, Trash2, Eye, MoreVertical, TrendingUp 
+import {
+  Plus, Package, ShoppingCart, DollarSign, Users,
+  Edit, Trash2, Eye, MoreVertical, TrendingUp, Calendar
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
@@ -46,8 +46,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
-import type { Product, Order, Category } from "@shared/schema";
+import type { Product, Order, Category, Booking, Customer, Service } from "@shared/schema";
 import { AdvertisingBuilder } from "@/components/AdvertisingBuilder";
+
+type BookingWithDetails = Booking & { customer: Customer; service: Service };
 
 interface OrderWithDetails extends Order {
   items: any[];
@@ -92,6 +94,33 @@ export default function AdminDashboard() {
   // Fetch categories
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
+  });
+
+  // Fetch bookings
+  const { data: bookings = [], isLoading: bookingsLoading } = useQuery<BookingWithDetails[]>({
+    queryKey: ["/api/admin/bookings"],
+    queryFn: async () => {
+      const response = await fetch("/api/admin/bookings", { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to fetch bookings");
+      return response.json();
+    },
+  });
+
+  const updateBookingMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const response = await fetch(`/api/admin/bookings/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status }),
+      });
+      if (!response.ok) throw new Error("Failed to update booking");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/bookings"] });
+      toast({ title: "Booking Updated", description: "The booking status has been updated." });
+    },
   });
 
   // Fetch orders
@@ -242,6 +271,7 @@ export default function AdminDashboard() {
           <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
           <TabsTrigger value="products" data-testid="tab-products">Products</TabsTrigger>
           <TabsTrigger value="orders" data-testid="tab-orders">Orders</TabsTrigger>
+          <TabsTrigger value="bookings" data-testid="tab-bookings">Bookings</TabsTrigger>
           <TabsTrigger value="advertising" data-testid="tab-advertising">Advertising</TabsTrigger>
         </TabsList>
 
@@ -399,6 +429,77 @@ export default function AdminDashboard() {
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Bookings Tab */}
+        <TabsContent value="bookings" className="mt-0">
+          <Card>
+            <CardHeader>
+              <CardTitle>Service Bookings</CardTitle>
+              <CardDescription>Appointments booked through the online booking system</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {bookingsLoading ? (
+                <div className="text-center py-8">Loading bookings...</div>
+              ) : bookings.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No bookings yet. Bookings will appear here when customers schedule services.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {bookings.map((booking) => (
+                    <div key={booking.id} className="flex items-start justify-between p-4 border rounded-lg gap-4">
+                      <div className="flex items-start gap-3">
+                        <Calendar className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{booking.bookingNumber}</p>
+                            <Badge variant={
+                              booking.status === "completed" ? "default" :
+                              booking.status === "in-progress" ? "secondary" :
+                              booking.status === "scheduled" ? "outline" :
+                              "destructive"
+                            }>
+                              {booking.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm font-medium">{booking.service.name} — {booking.squareFootage} sq ft</p>
+                          <p className="text-sm text-muted-foreground">
+                            {booking.customer.name} · {booking.customer.email} · {booking.customer.phone}
+                          </p>
+                          <p className="text-sm text-muted-foreground">{booking.customer.address}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(booking.scheduledDate).toLocaleString()}
+                          </p>
+                          {booking.specialInstructions && (
+                            <p className="text-xs bg-muted px-2 py-1 rounded">{booking.specialInstructions}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-2 shrink-0">
+                        <span className="font-semibold">${parseFloat(booking.totalPrice).toFixed(2)}</span>
+                        <Select
+                          value={booking.status}
+                          onValueChange={(value) => updateBookingMutation.mutate({ id: booking.id, status: value })}
+                        >
+                          <SelectTrigger className="w-36 h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="scheduled">Scheduled</SelectItem>
+                            <SelectItem value="confirmed">Confirmed</SelectItem>
+                            <SelectItem value="in-progress">In Progress</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   ))}
