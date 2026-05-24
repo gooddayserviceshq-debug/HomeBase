@@ -196,21 +196,23 @@ export default function Book() {
       <div className="max-w-4xl mx-auto px-4 md:px-8">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">Book Your Service</h1>
-          <div className="flex items-center gap-2">
-            {[1, 2, 3, 4].map((num) => (
-              <div key={num} className="flex items-center">
-                <div className={`flex items-center justify-center w-8 h-8 rounded-full ${step >= num ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+          <div className="flex items-center">
+            {[1, 2, 3, 4].map((num, idx) => (
+              <>
+                {idx > 0 && (
+                  <div key={`line-${num}`} className={`flex-1 h-0.5 ${step > idx ? 'bg-primary' : 'bg-muted'}`} />
+                )}
+                <div key={num} className={`flex items-center justify-center w-8 h-8 rounded-full shrink-0 ${step >= num ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
                   {step > num ? <CheckCircle2 className="h-5 w-5" /> : num}
                 </div>
-                {num < 4 && <div className={`w-12 h-0.5 ${step > num ? 'bg-primary' : 'bg-muted'}`} />}
-              </div>
+              </>
             ))}
           </div>
           <div className="flex justify-between mt-2 text-sm text-muted-foreground">
-            <span>Service</span>
+            <span className="text-center w-8">Service</span>
             <span>Quote</span>
             <span>Schedule</span>
-            <span>Details</span>
+            <span className="text-center w-8">Details</span>
           </div>
         </div>
 
