@@ -9,7 +9,7 @@ interface EmailConfig {
 }
 
 const emailConfig: EmailConfig = {
-  from: process.env.SENDGRID_FROM_EMAIL || "GoodDayServicesHQ@gmail.com",
+  from: process.env.SENDGRID_FROM_EMAIL || "hello@gooddaypressurewashing.com",
   fromName: "Good Day Pressure Washing"
 };
 
@@ -113,7 +113,7 @@ export function generatePropertyCleaningQuoteEmail(quote: PropertyCleaningQuote)
         <p><strong>Good Day Pressure Washing</strong><br>
         Murfreesboro, TN<br>
         615-390-9779<br>
-        GoodDayServicesHQ@gmail.com</p>
+        hello@gooddaypressurewashing.com</p>
         <p style="font-size: 12px;">This quote is valid for 30 days from the date of issue. Prices subject to change based on actual property conditions.</p>
       </div>
     </div>
@@ -149,7 +149,7 @@ This quote is valid for 30 days.
 Good Day Pressure Washing
 Murfreesboro, TN
 615-390-9779
-GoodDayServicesHQ@gmail.com
+hello@gooddaypressurewashing.com
   `;
 
   return { subject, html, text };
@@ -269,7 +269,7 @@ export function generateRestorationQuoteEmail(quote: QuoteRequest): {
         <p><strong>Good Day Pressure Washing</strong><br>
         Murfreesboro, TN<br>
         615-390-9779<br>
-        GoodDayServicesHQ@gmail.com</p>
+        hello@gooddaypressurewashing.com</p>
         <p style="font-size: 12px;">This quote is valid for 30 days from the date of issue. Final pricing may vary based on actual site conditions.</p>
       </div>
     </div>
@@ -324,7 +324,7 @@ This quote is valid for 30 days.
 Good Day Pressure Washing
 Murfreesboro, TN
 615-390-9779
-GoodDayServicesHQ@gmail.com
+hello@gooddaypressurewashing.com
   `;
 
   return { subject, html, text };

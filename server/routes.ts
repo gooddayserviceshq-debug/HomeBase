@@ -670,7 +670,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         if (sendEmail && process.env.SENDGRID_API_KEY) {
           await sendEmail({
-            to: "GoodDayServicesHQ@gmail.com",
+            to: "hello@gooddaypressurewashing.com",
             subject: `New Customer Inquiry: ${validatedData.inquiryType}`,
             text: `
 New customer inquiry received:
