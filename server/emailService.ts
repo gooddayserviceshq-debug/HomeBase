@@ -10,7 +10,7 @@ interface EmailConfig {
 
 const emailConfig: EmailConfig = {
   from: process.env.SENDGRID_FROM_EMAIL || "GoodDayServicesHQ@gmail.com",
-  fromName: "Good Day Services"
+  fromName: "Good Day Pressure Washing"
 };
 
 // Property Cleaning Quote Email Template
@@ -55,13 +55,13 @@ export function generatePropertyCleaningQuoteEmail(quote: PropertyCleaningQuote)
 <body>
   <div class="container">
     <div class="header">
-      <h1>Good Day Services</h1>
+      <h1>Good Day Pressure Washing</h1>
       <p>Professional Property Cleaning Quote</p>
     </div>
     
     <div class="content">
       <h2>Hello ${quote.customerName},</h2>
-      <p>Thank you for requesting a property cleaning quote from Good Day Services. We're pleased to provide you with the following estimate:</p>
+      <p>Thank you for requesting a property cleaning quote from Good Day Pressure Washing. We're pleased to provide you with the following estimate:</p>
       
       <div class="quote-box">
         <h3>Property Address:</h3>
@@ -110,7 +110,7 @@ export function generatePropertyCleaningQuoteEmail(quote: PropertyCleaningQuote)
       </div>
       
       <div class="footer">
-        <p><strong>Good Day Services</strong><br>
+        <p><strong>Good Day Pressure Washing</strong><br>
         Murfreesboro, TN<br>
         615-390-9779<br>
         GoodDayServicesHQ@gmail.com</p>
@@ -123,7 +123,7 @@ export function generatePropertyCleaningQuoteEmail(quote: PropertyCleaningQuote)
   `;
 
   const text = `
-Good Day Services - Property Cleaning Quote
+Good Day Pressure Washing - Property Cleaning Quote
 
 Hello ${quote.customerName},
 
@@ -146,7 +146,7 @@ Next Steps:
 
 This quote is valid for 30 days.
 
-Good Day Services
+Good Day Pressure Washing
 Murfreesboro, TN
 615-390-9779
 GoodDayServicesHQ@gmail.com
@@ -184,13 +184,13 @@ export function generateRestorationQuoteEmail(quote: QuoteRequest): {
 <body>
   <div class="container">
     <div class="header">
-      <h1>Good Day Services</h1>
+      <h1>Good Day Pressure Washing</h1>
       <p>Professional Paver Restoration Quote</p>
     </div>
     
     <div class="content">
       <h2>Hello ${quote.name},</h2>
-      <p>Thank you for requesting a paver restoration quote from Good Day Services. Based on your property details, we're pleased to provide the following service options:</p>
+      <p>Thank you for requesting a paver restoration quote from Good Day Pressure Washing. Based on your property details, we're pleased to provide the following service options:</p>
       
       <div class="quote-box">
         <h3>Project Details:</h3>
@@ -266,7 +266,7 @@ export function generateRestorationQuoteEmail(quote: QuoteRequest): {
       </div>
       
       <div class="footer">
-        <p><strong>Good Day Services</strong><br>
+        <p><strong>Good Day Pressure Washing</strong><br>
         Murfreesboro, TN<br>
         615-390-9779<br>
         GoodDayServicesHQ@gmail.com</p>
@@ -279,7 +279,7 @@ export function generateRestorationQuoteEmail(quote: QuoteRequest): {
   `;
 
   const text = `
-Good Day Services - Paver Restoration Quote
+Good Day Pressure Washing - Paver Restoration Quote
 
 Hello ${quote.name},
 
@@ -321,7 +321,7 @@ Next Steps:
 
 This quote is valid for 30 days.
 
-Good Day Services
+Good Day Pressure Washing
 Murfreesboro, TN
 615-390-9779
 GoodDayServicesHQ@gmail.com
@@ -332,7 +332,7 @@ GoodDayServicesHQ@gmail.com
 
 // SMS Templates
 export function generatePropertyCleaningQuoteSMS(quote: PropertyCleaningQuote): string {
-  return `Good Day Services Quote #${quote.id.slice(0, 8)}
+  return `Good Day Pressure Washing Quote #${quote.id.slice(0, 8)}
 
 Property: ${quote.propertyAddress}
 Services: ${[
@@ -350,7 +350,7 @@ Valid 30 days`;
 }
 
 export function generateRestorationQuoteSMS(quote: QuoteRequest): string {
-  return `Good Day Services Quote #${quote.id.slice(0, 8)}
+  return `Good Day Pressure Washing Quote #${quote.id.slice(0, 8)}
 
 ${quote.squareFootage} sq ft restoration
 Basic: $${quote.basicTierPrice}

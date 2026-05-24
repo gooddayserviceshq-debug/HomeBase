@@ -69,7 +69,7 @@ export default function CustomerDashboard() {
             </div>
             <h1 className="text-3xl md:text-4xl font-bold">My Appointments</h1>
           </div>
-          <p className="text-muted-foreground ml-13">Track and manage your Good Day Services bookings</p>
+          <p className="text-muted-foreground ml-13">Track and manage your Good Day Pressure Washing bookings</p>
         </div>
       </div>
 

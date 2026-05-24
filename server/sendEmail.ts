@@ -12,7 +12,7 @@ import type { PropertyCleaningQuote, QuoteRequest } from "@shared/schema";
 // Check if SendGrid is configured
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || "GoodDayServicesHQ@gmail.com";
-const SENDGRID_FROM_NAME = process.env.SENDGRID_FROM_NAME || "Good Day Services";
+const SENDGRID_FROM_NAME = process.env.SENDGRID_FROM_NAME || "Good Day Pressure Washing";
 
 // Twilio configuration
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;

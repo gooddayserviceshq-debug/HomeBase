@@ -32,8 +32,8 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         <div className="flex h-16 items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2 hover-elevate rounded-lg px-2 py-1 -ml-2">
-            <img src={logoUrl} alt="Good Day Services Logo" className="h-8 w-8" />
-            <span className="font-bold text-lg">Good Day Services</span>
+            <img src={logoUrl} alt="Good Day Pressure Washing Logo" className="h-8 w-8" />
+            <span className="font-bold text-lg">Good Day Pressure Washing</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-6">

@@ -7,10 +7,10 @@ import { sendEmail } from "./sendEmail";
 import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
 
-const GDS_SYSTEM_PROMPT = `You are the AI receptionist for Good Day Services (GDS), a professional outdoor cleaning and restoration company based in the Murfreesboro, Tennessee area. You are friendly, helpful, and knowledgeable about all GDS services.
+const GDS_SYSTEM_PROMPT = `You are the AI receptionist for Good Day Pressure Washing (GDS), a professional outdoor cleaning and restoration company based in the Murfreesboro, Tennessee area. You are friendly, helpful, and knowledgeable about all GDS services.
 
-## About Good Day Services
-Good Day Services specializes in two main service categories:
+## About Good Day Pressure Washing
+Good Day Pressure Washing specializes in two main service categories:
 
 ### 1. Paver & Surface Restoration
 We restore driveways, patios, walkways, and pool decks made of:
@@ -1048,7 +1048,7 @@ ${validatedData.message}
       all: "Full-service outdoor cleaning and restoration: paver restoration, property cleaning, and professional products for Middle Tennessee homeowners.",
     };
 
-    const systemPrompt = `You are a professional copywriter for Good Day Services (GDS), a pressure washing and paver restoration company in Murfreesboro, Tennessee. Their tagline is "Bringing a Shine to Your Home." Phone: 615-390-9779. Website: gooddayservices.com.
+    const systemPrompt = `You are a professional copywriter for Good Day Pressure Washing (GDS), a pressure washing and paver restoration company in Murfreesboro, Tennessee. Their tagline is "Bringing a Shine to Your Home." Phone: 615-390-9779. Website: gooddaypressurewashing.com.
 
 Write advertising copy that is compelling, benefit-focused, and authentic. Avoid generic AI filler phrases. Use concrete details (sq ft pricing, years of protection, specific surfaces).
 
