@@ -143,10 +143,12 @@ export default function Home() {
                 </Button>
               </Link>
               
-              <Button size="lg" variant="outline" className="gap-2 group backdrop-blur-sm bg-background/50 hover:bg-background/80 transition-all duration-300 transform hover:scale-105" data-testid="button-watch-video">
-                <Play className="h-5 w-5 group-hover:scale-110 transition-transform" />
-                Watch Our Process
-              </Button>
+              <a href="#services">
+                <Button size="lg" variant="outline" className="gap-2 group backdrop-blur-sm bg-background/50 hover:bg-background/80 transition-all duration-300 transform hover:scale-105" data-testid="button-our-services">
+                  <Play className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                  Our Services
+                </Button>
+              </a>
             </div>
 
             {/* Social Proof */}
@@ -501,10 +503,12 @@ export default function Home() {
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="gap-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all border-white/20 transform hover:scale-105" data-testid="button-call-now">
-              <Phone className="h-5 w-5" />
-              Call 615-390-9779
-            </Button>
+            <a href="tel:6153909779">
+              <Button size="lg" variant="outline" className="gap-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all border-white/20 transform hover:scale-105" data-testid="button-call-now">
+                <Phone className="h-5 w-5" />
+                Call 615-390-9779
+              </Button>
+            </a>
           </div>
         </div>
       </section>

@@ -229,20 +229,25 @@ export default function Book() {
           {services.map((service) => {
                 const Icon = serviceIcons[service.name as keyof typeof serviceIcons] || Droplet;
                 return (
-                  <Card 
-                    key={service.id} 
-                    className="hover-elevate cursor-pointer transition-all"
+                  <Card
+                    key={service.id}
+                    className="group cursor-pointer border-2 hover:border-primary/50 hover:shadow-lg transition-all duration-200"
                     onClick={() => handleServiceSelect(service)}
                     data-testid={`card-service-${service.id}`}
                   >
-                    <CardContent className="p-6">
-                      <Icon className="h-12 w-12 text-primary mb-3" />
-                      <h3 className="text-xl font-semibold mb-2">{service.name}</h3>
-                      <p className="text-2xl font-bold text-primary mb-2">
-                        Starting at ${service.basePrice}
-                      </p>
-                      <p className="text-muted-foreground text-sm mb-3">{service.description}</p>
-                      <Badge variant="secondary">${service.pricePerSqFt}/sq ft</Badge>
+                    <CardContent className="p-6 flex flex-col h-full">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                          <Icon className="h-6 w-6 text-primary" />
+                        </div>
+                        <Badge variant="outline" className="text-xs">${service.pricePerSqFt}/sq ft</Badge>
+                      </div>
+                      <h3 className="text-lg font-semibold mb-1">{service.name}</h3>
+                      <p className="text-muted-foreground text-sm mb-4 flex-1">{service.description}</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xl font-bold text-primary">From ${parseFloat(service.basePrice).toFixed(0)}</p>
+                        <span className="text-xs text-primary font-medium group-hover:underline">Select →</span>
+                      </div>
                     </CardContent>
                   </Card>
                 );

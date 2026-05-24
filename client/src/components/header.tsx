@@ -1,10 +1,16 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
-import { Menu, X, LogIn, LogOut } from "lucide-react";
+import { Menu, X, LogIn, LogOut, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { type User } from "@shared/schema";
 import logoUrl from "@assets/transparent GDS social avatar logo color (1)_1760659313459.png";
 
@@ -34,18 +40,22 @@ export function Header() {
             <Link href="/" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/" ? "text-foreground" : "text-muted-foreground"}`}>
               Home
             </Link>
-            <a href="#services" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
-              Services
-            </a>
             <Link href="/products" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/products" ? "text-foreground" : "text-muted-foreground"}`}>
               Products
             </Link>
-            <Link href="/documents" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/documents" ? "text-foreground" : "text-muted-foreground"}`}>
-              Resources
-            </Link>
-            <Link href="/warranties" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/warranties" ? "text-foreground" : "text-muted-foreground"}`}>
-              Warranties
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger className={`text-sm font-medium transition-colors hover:text-primary flex items-center gap-1 ${location === "/documents" || location === "/warranties" ? "text-foreground" : "text-muted-foreground"}`}>
+                Resources <ChevronDown className="h-3 w-3" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem asChild>
+                  <Link href="/documents">Documents & Guides</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/warranties">Warranties</Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Link href="/contact" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/contact" ? "text-foreground" : "text-muted-foreground"}`}>
               Contact
             </Link>
@@ -134,12 +144,12 @@ export function Header() {
               </Button>
             </Link>
             <Link href="/documents" onClick={() => setMobileMenuOpen(false)}>
-              <Button variant="ghost" className="w-full justify-start" data-testid="link-mobile-documents">
-                Resources
+              <Button variant="ghost" className="w-full justify-start pl-8 text-muted-foreground" data-testid="link-mobile-documents">
+                Documents & Guides
               </Button>
             </Link>
             <Link href="/warranties" onClick={() => setMobileMenuOpen(false)}>
-              <Button variant="ghost" className="w-full justify-start" data-testid="link-mobile-warranties">
+              <Button variant="ghost" className="w-full justify-start pl-8 text-muted-foreground" data-testid="link-mobile-warranties">
                 Warranties
               </Button>
             </Link>
