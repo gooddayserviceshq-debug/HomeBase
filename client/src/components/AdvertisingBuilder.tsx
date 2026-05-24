@@ -28,9 +28,9 @@ import {
 } from "lucide-react";
 
 const PLATFORMS = [
-  { value: "facebook", label: "Facebook / Instagram", icon: Facebook, color: "bg-blue-500" },
+  { value: "facebook", label: "Facebook / IG", icon: Facebook, color: "bg-blue-500" },
   { value: "google", label: "Google Ads", icon: Search, color: "bg-red-500" },
-  { value: "email", label: "Email Campaign", icon: Mail, color: "bg-green-600" },
+  { value: "email", label: "Email", icon: Mail, color: "bg-green-600" },
   { value: "sms", label: "SMS / Text", icon: MessageSquare, color: "bg-purple-500" },
   { value: "nextdoor", label: "Nextdoor", icon: MapPin, color: "bg-orange-500" },
   { value: "flyer", label: "Flyer / Print", icon: FileText, color: "bg-gray-600" },

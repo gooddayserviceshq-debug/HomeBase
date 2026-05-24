@@ -218,7 +218,13 @@ export default function Book() {
           <div>
             <h2 className="text-2xl font-semibold mb-6">Select Your Service</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {services.map((service) => {
+              {services.length === 0 && (
+            <div className="col-span-2 flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
+              <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+              <p className="text-sm">Loading services…</p>
+            </div>
+          )}
+          {services.map((service) => {
                 const Icon = serviceIcons[service.name as keyof typeof serviceIcons] || Droplet;
                 return (
                   <Card 
