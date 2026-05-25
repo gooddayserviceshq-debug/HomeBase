@@ -86,6 +86,13 @@ export default function Book() {
     onSuccess: (data) => {
       setQuote(data);
     },
+    onError: () => {
+      toast({
+        title: "Quote Failed",
+        description: "Could not calculate a quote. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const createBookingMutation = useMutation({
@@ -100,6 +107,13 @@ export default function Book() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
       setLocation("/my-appointments");
+    },
+    onError: () => {
+      toast({
+        title: "Booking Failed",
+        description: "Could not complete your booking. Please try again or call 615-390-9779.",
+        variant: "destructive",
+      });
     },
   });
 
