@@ -1336,6 +1336,47 @@ Blake's email: blakemcconnell1215@gmail.com`;
     }
   });
 
+  // Lead CRM routes
+  app.get("/api/leads", isAuthenticated, async (req, res) => {
+    try {
+      const status = req.query.status as string | undefined;
+      const leads = await storage.getLeads(status);
+      res.json(leads);
+    } catch { res.status(500).json({ message: "Failed to fetch leads" }); }
+  });
+
+  app.post("/api/leads", isAuthenticated, async (req, res) => {
+    try {
+      const { insertLeadSchema } = await import("@shared/schema");
+      const data = insertLeadSchema.parse(req.body);
+      const lead = await storage.createLead(data);
+      res.status(201).json(lead);
+    } catch (error: any) {
+      if (error.name === "ZodError") return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      res.status(500).json({ message: "Failed to create lead" });
+    }
+  });
+
+  app.patch("/api/leads/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { updateLeadSchema } = await import("@shared/schema");
+      const data = updateLeadSchema.parse(req.body);
+      const lead = await storage.updateLead(req.params.id, data);
+      if (!lead) return res.status(404).json({ message: "Lead not found" });
+      res.json(lead);
+    } catch (error: any) {
+      if (error.name === "ZodError") return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      res.status(500).json({ message: "Failed to update lead" });
+    }
+  });
+
+  app.delete("/api/leads/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteLead(req.params.id);
+      res.status(204).send();
+    } catch { res.status(500).json({ message: "Failed to delete lead" }); }
+  });
+
   // Commercial service quote routes (public submission, admin read)
   app.post("/api/commercial-quotes", async (req, res) => {
     try {

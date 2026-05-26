@@ -32,6 +32,9 @@ import {
   type UpdateContract,
   type CommercialServiceQuote,
   type InsertCommercialServiceQuote,
+  type Lead,
+  type InsertLead,
+  type UpdateLead,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -123,6 +126,13 @@ export interface IStorage {
   updateContract(id: string, updates: UpdateContract): Promise<Contract | undefined>;
   deleteContract(id: string): Promise<void>;
 
+  // Lead CRM operations
+  getLeads(status?: string): Promise<Lead[]>;
+  getLead(id: string): Promise<Lead | undefined>;
+  createLead(lead: InsertLead): Promise<Lead>;
+  updateLead(id: string, updates: UpdateLead): Promise<Lead | undefined>;
+  deleteLead(id: string): Promise<void>;
+
   // Commercial service quote operations
   getCommercialServiceQuotes(): Promise<CommercialServiceQuote[]>;
   getCommercialServiceQuote(id: string): Promise<CommercialServiceQuote | undefined>;
@@ -147,6 +157,7 @@ export class MemStorage implements IStorage {
   private bookings: Map<string, Booking>;
   private contracts: Map<string, Contract>;
   private commercialServiceQuotes: Map<string, CommercialServiceQuote>;
+  private leads: Map<string, Lead>;
 
   constructor() {
     this.quoteRequests = new Map();
@@ -165,6 +176,8 @@ export class MemStorage implements IStorage {
     this.bookings = new Map();
     this.contracts = new Map();
     this.commercialServiceQuotes = new Map();
+    this.leads = new Map();
+    this.seedLeads();
 
     // Initialize with sample products
     this.initializeSampleData();
@@ -1020,6 +1033,181 @@ export class MemStorage implements IStorage {
 
     this.commercialServiceQuotes.set(id, newQuote);
     return newQuote;
+  }
+
+  // Lead CRM
+  private seedLeads() {
+    const seed: Lead[] = [
+      {
+        id: "lead-001", leadId: "GDS-L-0001",
+        date: new Date("2025-09-30"), source: "facebook",
+        name: "Facebook Lead 1", phone: "615-555-0101", email: null, address: "Murfreesboro, TN", zip: "37130",
+        serviceInterest: "house_wash", estimatedValue: "400", status: "lost",
+        assignedTo: "Blake", quotedAmount: null, followUpDate: null, notes: "Did not respond after follow-up",
+        referredBy: null, adSpend: "30", wonAt: null, lostReason: "No response",
+        createdAt: new Date("2025-09-30"), updatedAt: new Date("2025-09-30"),
+      },
+      {
+        id: "lead-002", leadId: "GDS-L-0002",
+        date: new Date("2025-09-30"), source: "facebook",
+        name: "Facebook Lead 2", phone: "615-555-0102", email: null, address: "Smyrna, TN", zip: "37167",
+        serviceInterest: "driveway", estimatedValue: "300", status: "won",
+        assignedTo: "Blake", quotedAmount: "300", followUpDate: null, notes: "Smith Family — quick close",
+        referredBy: null, adSpend: "30", wonAt: new Date("2025-10-01"), lostReason: null,
+        createdAt: new Date("2025-09-30"), updatedAt: new Date("2025-10-01"),
+      },
+      {
+        id: "lead-003", leadId: "GDS-L-0003",
+        date: new Date("2025-10-01"), source: "tiktok",
+        name: "TikTok Lead 1", phone: "615-555-0103", email: null, address: "Lavergne, TN", zip: "37086",
+        serviceInterest: "roof", estimatedValue: "450", status: "won",
+        assignedTo: "Blake", quotedAmount: "450", followUpDate: null, notes: "Jones Residence — roof wash",
+        referredBy: null, adSpend: "87.50", wonAt: new Date("2025-10-02"), lostReason: null,
+        createdAt: new Date("2025-10-01"), updatedAt: new Date("2025-10-02"),
+      },
+      {
+        id: "lead-004", leadId: "GDS-L-0004",
+        date: new Date("2025-10-01"), source: "tiktok",
+        name: "TikTok Lead 2", phone: "615-555-0104", email: null, address: "Murfreesboro, TN", zip: "37129",
+        serviceInterest: "house_wash", estimatedValue: "400", status: "won",
+        assignedTo: "Blake", quotedAmount: "400", followUpDate: null, notes: "Taylor Home — house wash",
+        referredBy: null, adSpend: "87.50", wonAt: new Date("2025-10-03"), lostReason: null,
+        createdAt: new Date("2025-10-01"), updatedAt: new Date("2025-10-03"),
+      },
+      {
+        id: "lead-005", leadId: "GDS-L-0005",
+        date: new Date("2025-10-02"), source: "google_maps",
+        name: "Google Maps Lead 1", phone: "615-555-0105", email: null, address: "Murfreesboro, TN", zip: "37130",
+        serviceInterest: "driveway", estimatedValue: "300", status: "won",
+        assignedTo: "Blake", quotedAmount: "300", followUpDate: null, notes: "Organic GBP inquiry",
+        referredBy: null, adSpend: "0", wonAt: new Date("2025-10-02"), lostReason: null,
+        createdAt: new Date("2025-10-02"), updatedAt: new Date("2025-10-02"),
+      },
+      {
+        id: "lead-006", leadId: "GDS-L-0006",
+        date: new Date("2025-10-02"), source: "google_maps",
+        name: "Google Maps Lead 2", phone: "615-555-0106", email: null, address: "Smyrna, TN", zip: "37167",
+        serviceInterest: "bundle", estimatedValue: "700", status: "won",
+        assignedTo: "Blake", quotedAmount: "700", followUpDate: null, notes: "Driveway + soft wash bundle",
+        referredBy: null, adSpend: "0", wonAt: new Date("2025-10-02"), lostReason: null,
+        createdAt: new Date("2025-10-02"), updatedAt: new Date("2025-10-02"),
+      },
+      {
+        id: "lead-007", leadId: "GDS-L-0007",
+        date: new Date("2025-10-02"), source: "google_maps",
+        name: "Google Maps Lead 3", phone: "615-555-0107", email: null, address: "Murfreesboro, TN", zip: "37128",
+        serviceInterest: "gutters", estimatedValue: "300", status: "won",
+        assignedTo: "Blake", quotedAmount: "300", followUpDate: null, notes: "Gutters + driveway",
+        referredBy: null, adSpend: "0", wonAt: new Date("2025-10-02"), lostReason: null,
+        createdAt: new Date("2025-10-02"), updatedAt: new Date("2025-10-02"),
+      },
+      {
+        id: "lead-008", leadId: "GDS-L-0008",
+        date: new Date("2025-10-02"), source: "google_maps",
+        name: "Google Maps Lead 4", phone: "615-555-0108", email: null, address: "Lavergne, TN", zip: "37086",
+        serviceInterest: "house_wash", estimatedValue: "400", status: "won",
+        assignedTo: "Blake", quotedAmount: "400", followUpDate: null, notes: "Called same day, booked",
+        referredBy: null, adSpend: "0", wonAt: new Date("2025-10-03"), lostReason: null,
+        createdAt: new Date("2025-10-02"), updatedAt: new Date("2025-10-03"),
+      },
+      {
+        id: "lead-009", leadId: "GDS-L-0009",
+        date: new Date("2025-10-02"), source: "google_maps",
+        name: "Google Maps Lead 5", phone: "615-555-0109", email: null, address: "Smyrna, TN", zip: "37167",
+        serviceInterest: "roof", estimatedValue: "450", status: "quoted",
+        assignedTo: "Blake", quotedAmount: "450", followUpDate: new Date("2026-05-30"), notes: "Quoted, awaiting decision",
+        referredBy: null, adSpend: "0", wonAt: null, lostReason: null,
+        createdAt: new Date("2025-10-02"), updatedAt: new Date("2025-10-02"),
+      },
+      {
+        id: "lead-010", leadId: "GDS-L-0010",
+        date: new Date("2025-10-05"), source: "referral",
+        name: "Referral from Smith Family", phone: "615-555-0110", email: "neighbor@example.com", address: "Murfreesboro, TN", zip: "37130",
+        serviceInterest: "paver_restoration", estimatedValue: "1200", status: "quoted",
+        assignedTo: "Blake", quotedAmount: "1200", followUpDate: new Date("2026-05-28"), notes: "Referred by Smith Family job. Large paver driveway.",
+        referredBy: "Smith Family (lead-002)", adSpend: "0", wonAt: null, lostReason: null,
+        createdAt: new Date("2025-10-05"), updatedAt: new Date("2025-10-05"),
+      },
+      {
+        id: "lead-011", leadId: "GDS-L-0011",
+        date: new Date("2026-05-20"), source: "commercial_quote",
+        name: "Ed (Superintendent)", phone: "615-555-0200", email: "ed@topreamerica.com", address: "7735 Florence Road, Smyrna, TN 37167", zip: "37167",
+        serviceInterest: "construction_cleanup", estimatedValue: "9200", status: "won",
+        assignedTo: "Blake", quotedAmount: "9200", followUpDate: null, notes: "Topre America Corp — 50,000 sq ft I-beams, trusses, purlins. 2-man crew + lift.",
+        referredBy: null, adSpend: "0", wonAt: new Date("2026-05-20"), lostReason: null,
+        createdAt: new Date("2026-05-20"), updatedAt: new Date("2026-05-20"),
+      },
+      {
+        id: "lead-012", leadId: "GDS-L-0012",
+        date: new Date("2026-05-24"), source: "direct",
+        name: "New Prospect", phone: "615-555-0201", email: null, address: "Murfreesboro, TN", zip: "37130",
+        serviceInterest: "fleet", estimatedValue: "950", status: "new",
+        assignedTo: null, quotedAmount: null, followUpDate: new Date("2026-05-27"), notes: "10 box trucks, monthly contract inquiry",
+        referredBy: null, adSpend: "0", wonAt: null, lostReason: null,
+        createdAt: new Date("2026-05-24"), updatedAt: new Date("2026-05-24"),
+      },
+    ];
+    seed.forEach((l) => this.leads.set(l.id, l));
+  }
+
+  async getLeads(status?: string): Promise<Lead[]> {
+    const all = Array.from(this.leads.values()).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return status ? all.filter((l) => l.status === status) : all;
+  }
+
+  async getLead(id: string): Promise<Lead | undefined> {
+    return this.leads.get(id);
+  }
+
+  async createLead(lead: InsertLead): Promise<Lead> {
+    const id = randomUUID();
+    const count = this.leads.size + 1;
+    const now = new Date();
+    const newLead: Lead = {
+      ...lead,
+      id,
+      leadId: `GDS-L-${String(count).padStart(4, "0")}`,
+      date: lead.date ? new Date(lead.date) : now,
+      email: lead.email ?? null,
+      address: lead.address ?? null,
+      zip: lead.zip ?? null,
+      estimatedValue: lead.estimatedValue ? String(lead.estimatedValue) : null,
+      assignedTo: lead.assignedTo ?? null,
+      quotedAmount: lead.quotedAmount ? String(lead.quotedAmount) : null,
+      followUpDate: lead.followUpDate ? new Date(lead.followUpDate) : null,
+      notes: lead.notes ?? null,
+      referredBy: lead.referredBy ?? null,
+      adSpend: lead.adSpend ? String(lead.adSpend) : null,
+      wonAt: lead.wonAt ? new Date(lead.wonAt) : null,
+      lostReason: lead.lostReason ?? null,
+      status: lead.status ?? "new",
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.leads.set(id, newLead);
+    return newLead;
+  }
+
+  async updateLead(id: string, updates: UpdateLead): Promise<Lead | undefined> {
+    const existing = this.leads.get(id);
+    if (!existing) return undefined;
+    const updated: Lead = {
+      ...existing,
+      ...updates,
+      date: updates.date ? new Date(updates.date) : existing.date,
+      followUpDate: updates.followUpDate ? new Date(updates.followUpDate) : existing.followUpDate,
+      wonAt: updates.wonAt ? new Date(updates.wonAt) : existing.wonAt,
+      estimatedValue: updates.estimatedValue !== undefined ? (updates.estimatedValue ? String(updates.estimatedValue) : null) : existing.estimatedValue,
+      quotedAmount: updates.quotedAmount !== undefined ? (updates.quotedAmount ? String(updates.quotedAmount) : null) : existing.quotedAmount,
+      adSpend: updates.adSpend !== undefined ? (updates.adSpend ? String(updates.adSpend) : null) : existing.adSpend,
+      updatedAt: new Date(),
+    };
+    this.leads.set(id, updated);
+    return updated;
+  }
+
+  async deleteLead(id: string): Promise<void> {
+    this.leads.delete(id);
   }
 
   async updateCommercialServiceQuoteStatus(id: string, status: string): Promise<CommercialServiceQuote | undefined> {

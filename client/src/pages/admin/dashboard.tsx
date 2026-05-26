@@ -312,6 +312,7 @@ export default function AdminDashboard() {
           <TabsTrigger value="orders" data-testid="tab-orders">Orders</TabsTrigger>
           <TabsTrigger value="bookings" data-testid="tab-bookings">Bookings</TabsTrigger>
           <TabsTrigger value="advertising" data-testid="tab-advertising">Advertising</TabsTrigger>
+          <TabsTrigger value="leads" data-testid="tab-leads" onClick={() => window.location.href = "/admin/leads"}>Lead Pipeline</TabsTrigger>
           <TabsTrigger value="commercial" data-testid="tab-commercial">Commercial Leads</TabsTrigger>
           <TabsTrigger value="contracts" data-testid="tab-contracts" onClick={() => window.location.href = "/admin/contracts"}>Contracts</TabsTrigger>
         </TabsList>

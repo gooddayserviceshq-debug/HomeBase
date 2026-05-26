@@ -17,6 +17,7 @@ import Warranties from "@/pages/warranties";
 import Contact from "@/pages/Contact";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminContracts from "@/pages/admin/contracts";
+import AdminLeads from "@/pages/admin/leads";
 import CommercialQuote from "@/pages/commercial-quote";
 import CEODashboard from "@/pages/ceo-dashboard";
 import Book from "@/pages/book";
@@ -40,6 +41,7 @@ function Router() {
       <Route path="/my-appointments" component={CustomerDashboard} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/contracts" component={AdminContracts} />
+      <Route path="/admin/leads" component={AdminLeads} />
       <Route path="/commercial-quote" component={CommercialQuote} />
       <Route path="/ceo-dashboard" component={CEODashboard} />
       <Route path="/andromada" component={Andromada} />

@@ -426,6 +426,44 @@ export type BookingQuoteResponse = {
   squareFootage: number;
 };
 
+// Lead CRM Schema — mirrors GDH OPS HUB structure
+export const leads = pgTable("leads", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  leadId: text("lead_id").notNull().unique(), // GDS-L-0001 format
+  date: timestamp("date").notNull().defaultNow(),
+  source: text("source").notNull(), // google_maps | facebook | tiktok | referral | website | direct | commercial_quote | other
+  name: text("name").notNull(),
+  phone: text("phone").notNull(),
+  email: text("email"),
+  address: text("address"),
+  zip: text("zip"),
+  serviceInterest: text("service_interest").notNull(), // driveway | roof | house_wash | gutters | paver_restoration | construction_cleanup | fleet | equipment | bundle | other
+  estimatedValue: decimal("estimated_value", { precision: 10, scale: 2 }),
+  status: text("status").notNull().default("new"), // new | contacted | quoted | booked | won | lost
+  assignedTo: text("assigned_to"),
+  quotedAmount: decimal("quoted_amount", { precision: 10, scale: 2 }),
+  followUpDate: timestamp("follow_up_date"),
+  notes: text("notes"),
+  referredBy: text("referred_by"),
+  adSpend: decimal("ad_spend", { precision: 10, scale: 2 }),
+  wonAt: timestamp("won_at"),
+  lostReason: text("lost_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertLeadSchema = createInsertSchema(leads).omit({
+  id: true,
+  leadId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export const updateLeadSchema = insertLeadSchema.partial();
+
+export type Lead = typeof leads.$inferSelect;
+export type InsertLead = z.infer<typeof insertLeadSchema>;
+export type UpdateLead = z.infer<typeof updateLeadSchema>;
+
 // Commercial Service Quotes Schema
 export const commercialServiceQuotes = pgTable("commercial_service_quotes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
