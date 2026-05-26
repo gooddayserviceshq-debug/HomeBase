@@ -1336,6 +1336,60 @@ Blake's email: blakemcconnell1215@gmail.com`;
     }
   });
 
+  // Contract routes
+  app.get("/api/contracts", isAuthenticated, async (_req, res) => {
+    try {
+      const contracts = await storage.getContracts();
+      res.json(contracts);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch contracts" });
+    }
+  });
+
+  app.get("/api/contracts/:id", isAuthenticated, async (req, res) => {
+    try {
+      const contract = await storage.getContract(req.params.id);
+      if (!contract) return res.status(404).json({ message: "Contract not found" });
+      res.json(contract);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch contract" });
+    }
+  });
+
+  app.post("/api/contracts", isAuthenticated, async (req, res) => {
+    try {
+      const { insertContractSchema } = await import("@shared/schema");
+      const data = insertContractSchema.parse(req.body);
+      const contract = await storage.createContract(data);
+      res.status(201).json(contract);
+    } catch (error: any) {
+      if (error.name === "ZodError") return res.status(400).json({ message: "Invalid contract data", errors: error.errors });
+      res.status(500).json({ message: "Failed to create contract" });
+    }
+  });
+
+  app.patch("/api/contracts/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { updateContractSchema } = await import("@shared/schema");
+      const data = updateContractSchema.parse(req.body);
+      const contract = await storage.updateContract(req.params.id, data);
+      if (!contract) return res.status(404).json({ message: "Contract not found" });
+      res.json(contract);
+    } catch (error: any) {
+      if (error.name === "ZodError") return res.status(400).json({ message: "Invalid contract data", errors: error.errors });
+      res.status(500).json({ message: "Failed to update contract" });
+    }
+  });
+
+  app.delete("/api/contracts/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteContract(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete contract" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

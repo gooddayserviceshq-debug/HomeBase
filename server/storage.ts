@@ -27,6 +27,9 @@ import {
   type InsertCustomer,
   type Booking,
   type InsertBooking,
+  type Contract,
+  type InsertContract,
+  type UpdateContract,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -110,6 +113,13 @@ export interface IStorage {
   getBookingsByEmail(email: string): Promise<(Booking & { customer: Customer; service: Service })[]>;
   createBooking(customerData: InsertCustomer, bookingData: Omit<InsertBooking, "customerId">): Promise<{ booking: Booking; bookingNumber: string }>;
   updateBookingStatus(id: string, status: string): Promise<Booking | undefined>;
+
+  // Contract operations
+  getContracts(): Promise<Contract[]>;
+  getContract(id: string): Promise<Contract | undefined>;
+  createContract(contract: InsertContract): Promise<Contract>;
+  updateContract(id: string, updates: UpdateContract): Promise<Contract | undefined>;
+  deleteContract(id: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -127,6 +137,7 @@ export class MemStorage implements IStorage {
   private services: Map<string, Service>;
   private bookingCustomers: Map<string, Customer>;
   private bookings: Map<string, Booking>;
+  private contracts: Map<string, Contract>;
 
   constructor() {
     this.quoteRequests = new Map();
@@ -143,6 +154,7 @@ export class MemStorage implements IStorage {
     this.services = new Map();
     this.bookingCustomers = new Map();
     this.bookings = new Map();
+    this.contracts = new Map();
 
     // Initialize with sample products
     this.initializeSampleData();
@@ -886,7 +898,7 @@ export class MemStorage implements IStorage {
   async createCustomerInquiry(inquiry: InsertCustomerInquiry): Promise<CustomerInquiry> {
     const id = randomUUID();
     const now = new Date();
-    
+
     const newInquiry: CustomerInquiry = {
       ...inquiry,
       id,
@@ -896,9 +908,73 @@ export class MemStorage implements IStorage {
       createdAt: now,
       updatedAt: now,
     };
-    
+
     this.customerInquiries.set(id, newInquiry);
     return newInquiry;
+  }
+
+  // Contract operations
+  async getContracts(): Promise<Contract[]> {
+    return Array.from(this.contracts.values()).sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+    );
+  }
+
+  async getContract(id: string): Promise<Contract | undefined> {
+    return this.contracts.get(id);
+  }
+
+  async createContract(contract: InsertContract): Promise<Contract> {
+    const id = randomUUID();
+    const now = new Date();
+    const count = this.contracts.size + 1;
+    const contractNumber = `GDS-C-${String(count).padStart(4, "0")}`;
+
+    const newContract: Contract = {
+      ...contract,
+      id,
+      contractNumber,
+      clientCompany: contract.clientCompany ?? null,
+      endDate: contract.endDate ? new Date(contract.endDate) : null,
+      notes: contract.notes ?? null,
+      signedAt: contract.signedAt ? new Date(contract.signedAt) : null,
+      serviceTypes: (contract.serviceTypes ?? []) as string[],
+      rate: String(contract.rate),
+      lateFeePercent: contract.lateFeePercent ?? 5,
+      cancellationNoticeDays: contract.cancellationNoticeDays ?? 2,
+      status: contract.status ?? "draft",
+      contractType: contract.contractType ?? "one_time",
+      frequency: contract.frequency ?? "one_time",
+      rateUnit: contract.rateUnit ?? "per_visit",
+      paymentDue: contract.paymentDue ?? "upon_completion",
+      startDate: new Date(contract.startDate),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    this.contracts.set(id, newContract);
+    return newContract;
+  }
+
+  async updateContract(id: string, updates: UpdateContract): Promise<Contract | undefined> {
+    const existing = this.contracts.get(id);
+    if (!existing) return undefined;
+    const updated: Contract = {
+      ...existing,
+      ...updates,
+      startDate: updates.startDate ? new Date(updates.startDate) : existing.startDate,
+      endDate: updates.endDate ? new Date(updates.endDate) : existing.endDate,
+      signedAt: updates.signedAt ? new Date(updates.signedAt) : existing.signedAt,
+      rate: updates.rate !== undefined ? String(updates.rate) : existing.rate,
+      serviceTypes: (updates.serviceTypes ?? existing.serviceTypes) as string[],
+      updatedAt: new Date(),
+    };
+    this.contracts.set(id, updated);
+    return updated;
+  }
+
+  async deleteContract(id: string): Promise<void> {
+    this.contracts.delete(id);
   }
 }
 
