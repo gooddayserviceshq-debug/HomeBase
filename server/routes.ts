@@ -1336,6 +1336,40 @@ Blake's email: blakemcconnell1215@gmail.com`;
     }
   });
 
+  // Commercial service quote routes (public submission, admin read)
+  app.post("/api/commercial-quotes", async (req, res) => {
+    try {
+      const { insertCommercialServiceQuoteSchema } = await import("@shared/schema");
+      const data = insertCommercialServiceQuoteSchema.parse(req.body);
+      const quote = await storage.createCommercialServiceQuote(data);
+      res.status(201).json(quote);
+    } catch (error: any) {
+      if (error.name === "ZodError") return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      res.status(500).json({ message: "Failed to submit quote" });
+    }
+  });
+
+  app.get("/api/commercial-quotes", isAuthenticated, async (_req, res) => {
+    try {
+      const quotes = await storage.getCommercialServiceQuotes();
+      res.json(quotes);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch commercial quotes" });
+    }
+  });
+
+  app.patch("/api/commercial-quotes/:id/status", isAuthenticated, async (req, res) => {
+    try {
+      const { status } = req.body;
+      if (!status) return res.status(400).json({ message: "status required" });
+      const quote = await storage.updateCommercialServiceQuoteStatus(req.params.id, status);
+      if (!quote) return res.status(404).json({ message: "Quote not found" });
+      res.json(quote);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update status" });
+    }
+  });
+
   // Contract routes
   app.get("/api/contracts", isAuthenticated, async (_req, res) => {
     try {

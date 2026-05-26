@@ -30,6 +30,8 @@ import {
   type Contract,
   type InsertContract,
   type UpdateContract,
+  type CommercialServiceQuote,
+  type InsertCommercialServiceQuote,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -120,6 +122,12 @@ export interface IStorage {
   createContract(contract: InsertContract): Promise<Contract>;
   updateContract(id: string, updates: UpdateContract): Promise<Contract | undefined>;
   deleteContract(id: string): Promise<void>;
+
+  // Commercial service quote operations
+  getCommercialServiceQuotes(): Promise<CommercialServiceQuote[]>;
+  getCommercialServiceQuote(id: string): Promise<CommercialServiceQuote | undefined>;
+  createCommercialServiceQuote(quote: InsertCommercialServiceQuote): Promise<CommercialServiceQuote>;
+  updateCommercialServiceQuoteStatus(id: string, status: string): Promise<CommercialServiceQuote | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -138,6 +146,7 @@ export class MemStorage implements IStorage {
   private bookingCustomers: Map<string, Customer>;
   private bookings: Map<string, Booking>;
   private contracts: Map<string, Contract>;
+  private commercialServiceQuotes: Map<string, CommercialServiceQuote>;
 
   constructor() {
     this.quoteRequests = new Map();
@@ -155,6 +164,7 @@ export class MemStorage implements IStorage {
     this.bookingCustomers = new Map();
     this.bookings = new Map();
     this.contracts = new Map();
+    this.commercialServiceQuotes = new Map();
 
     // Initialize with sample products
     this.initializeSampleData();
@@ -975,6 +985,49 @@ export class MemStorage implements IStorage {
 
   async deleteContract(id: string): Promise<void> {
     this.contracts.delete(id);
+  }
+
+  // Commercial service quote operations
+  async getCommercialServiceQuotes(): Promise<CommercialServiceQuote[]> {
+    return Array.from(this.commercialServiceQuotes.values()).sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+    );
+  }
+
+  async getCommercialServiceQuote(id: string): Promise<CommercialServiceQuote | undefined> {
+    return this.commercialServiceQuotes.get(id);
+  }
+
+  async createCommercialServiceQuote(quote: InsertCommercialServiceQuote): Promise<CommercialServiceQuote> {
+    const id = randomUUID();
+    const now = new Date();
+    const count = this.commercialServiceQuotes.size + 1;
+    const quoteNumber = `GDS-CSQ-${String(count).padStart(4, "0")}`;
+
+    const newQuote: CommercialServiceQuote = {
+      ...quote,
+      id,
+      quoteNumber,
+      companyName: quote.companyName ?? null,
+      notes: quote.notes ?? null,
+      estimatedTotal: String(quote.estimatedTotal),
+      serviceDetails: (quote.serviceDetails ?? {}) as Record<string, unknown>,
+      lineItems: (quote.lineItems ?? []) as { label: string; qty: number; unitPrice: number; total: number }[],
+      status: quote.status ?? "new",
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    this.commercialServiceQuotes.set(id, newQuote);
+    return newQuote;
+  }
+
+  async updateCommercialServiceQuoteStatus(id: string, status: string): Promise<CommercialServiceQuote | undefined> {
+    const existing = this.commercialServiceQuotes.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, status, updatedAt: new Date() };
+    this.commercialServiceQuotes.set(id, updated);
+    return updated;
   }
 }
 

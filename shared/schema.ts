@@ -426,6 +426,35 @@ export type BookingQuoteResponse = {
   squareFootage: number;
 };
 
+// Commercial Service Quotes Schema
+export const commercialServiceQuotes = pgTable("commercial_service_quotes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  quoteNumber: text("quote_number").notNull().unique(),
+  contactName: text("contact_name").notNull(),
+  contactEmail: text("contact_email").notNull(),
+  contactPhone: text("contact_phone").notNull(),
+  companyName: text("company_name"),
+  siteAddress: text("site_address").notNull(),
+  serviceCategory: text("service_category").notNull(), // construction_cleanup | fleet_washing | heavy_equipment | other
+  serviceDetails: jsonb("service_details").$type<Record<string, unknown>>().notNull().default({}),
+  lineItems: jsonb("line_items").$type<{ label: string; qty: number; unitPrice: number; total: number }[]>().notNull().default([]),
+  estimatedTotal: decimal("estimated_total", { precision: 10, scale: 2 }).notNull(),
+  status: text("status").notNull().default("new"), // new | contacted | quoted | won | lost
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertCommercialServiceQuoteSchema = createInsertSchema(commercialServiceQuotes).omit({
+  id: true,
+  quoteNumber: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type CommercialServiceQuote = typeof commercialServiceQuotes.$inferSelect;
+export type InsertCommercialServiceQuote = z.infer<typeof insertCommercialServiceQuoteSchema>;
+
 // Commercial Contracts Schema
 export const contracts = pgTable("contracts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

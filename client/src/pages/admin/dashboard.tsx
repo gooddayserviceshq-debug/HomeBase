@@ -67,6 +67,21 @@ const productSchema = z.object({
 
 type ProductFormData = z.infer<typeof productSchema>;
 
+const COMMERCIAL_STATUS_COLORS: Record<string, string> = {
+  new: "bg-blue-100 text-blue-700",
+  contacted: "bg-yellow-100 text-yellow-700",
+  quoted: "bg-purple-100 text-purple-700",
+  won: "bg-green-100 text-green-700",
+  lost: "bg-red-100 text-red-700",
+};
+
+const COMMERCIAL_CATEGORY_LABELS: Record<string, string> = {
+  construction_cleanup: "Construction Cleanup",
+  fleet_washing: "Fleet Washing",
+  heavy_equipment: "Heavy Equipment",
+  other: "Other",
+};
+
 export default function AdminDashboard() {
   const [selectedTab, setSelectedTab] = useState("overview");
   const [showProductDialog, setShowProductDialog] = useState(false);
@@ -133,6 +148,30 @@ export default function AdminDashboard() {
       if (!response.ok) throw new Error("Failed to fetch orders");
       return response.json();
     },
+  });
+
+  // Fetch commercial quotes
+  const { data: commercialQuotes = [], isLoading: commercialQuotesLoading } = useQuery<any[]>({
+    queryKey: ["/api/commercial-quotes"],
+    queryFn: async () => {
+      const response = await fetch("/api/commercial-quotes", { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to fetch commercial quotes");
+      return response.json();
+    },
+  });
+
+  const updateCommercialStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const response = await fetch(`/api/commercial-quotes/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status }),
+      });
+      if (!response.ok) throw new Error("Failed to update status");
+      return response.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/commercial-quotes"] }),
   });
 
   const form = useForm<ProductFormData>({
@@ -273,6 +312,7 @@ export default function AdminDashboard() {
           <TabsTrigger value="orders" data-testid="tab-orders">Orders</TabsTrigger>
           <TabsTrigger value="bookings" data-testid="tab-bookings">Bookings</TabsTrigger>
           <TabsTrigger value="advertising" data-testid="tab-advertising">Advertising</TabsTrigger>
+          <TabsTrigger value="commercial" data-testid="tab-commercial">Commercial Leads</TabsTrigger>
           <TabsTrigger value="contracts" data-testid="tab-contracts" onClick={() => window.location.href = "/admin/contracts"}>Contracts</TabsTrigger>
         </TabsList>
 
@@ -563,6 +603,59 @@ export default function AdminDashboard() {
                           <Eye className="w-4 h-4 mr-2" />
                           View
                         </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Commercial Leads Tab */}
+        <TabsContent value="commercial" className="mt-0">
+          <Card>
+            <CardHeader>
+              <CardTitle>Commercial &amp; Specialty Quote Leads</CardTitle>
+              <CardDescription>Construction cleanup, fleet washing, and heavy equipment quote requests</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {commercialQuotesLoading ? (
+                <div className="text-center py-8">Loading...</div>
+              ) : commercialQuotes.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No commercial quote requests yet. They appear here when submitted at /commercial-quote.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {commercialQuotes.map((q: any) => (
+                    <div key={q.id} className="flex items-start justify-between p-4 border rounded-lg gap-4">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium">{q.quoteNumber}</p>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${COMMERCIAL_STATUS_COLORS[q.status] ?? ""}`}>
+                            {q.status.charAt(0).toUpperCase() + q.status.slice(1)}
+                          </span>
+                          <Badge variant="outline" className="text-xs">
+                            {COMMERCIAL_CATEGORY_LABELS[q.serviceCategory] ?? q.serviceCategory}
+                          </Badge>
+                        </div>
+                        <p className="text-sm">{q.contactName}{q.companyName ? ` — ${q.companyName}` : ""}</p>
+                        <p className="text-xs text-muted-foreground">{q.contactEmail} · {q.contactPhone}</p>
+                        <p className="text-xs text-muted-foreground">{q.siteAddress}</p>
+                        <p className="font-semibold text-primary">Est. ${Number(q.estimatedTotal).toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+                      </div>
+                      <div className="flex flex-col gap-1 shrink-0">
+                        {["new", "contacted", "quoted", "won", "lost"].map((s) => (
+                          <button
+                            key={s}
+                            disabled={q.status === s}
+                            onClick={() => updateCommercialStatusMutation.mutate({ id: q.id, status: s })}
+                            className={`text-xs px-2 py-1 rounded border transition-colors ${q.status === s ? "opacity-40 cursor-not-allowed bg-gray-100" : "hover:bg-gray-50"}`}
+                          >
+                            {s.charAt(0).toUpperCase() + s.slice(1)}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   ))}

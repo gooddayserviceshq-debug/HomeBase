@@ -55,6 +55,10 @@ const SERVICE_TYPE_OPTIONS = [
   { id: "deck_fence_cleaning", label: "Deck & Fence Cleaning" },
   { id: "paver_restoration", label: "Paver Restoration" },
   { id: "fleet_washing", label: "Fleet / Vehicle Washing" },
+  { id: "construction_cleanup", label: "New Construction Cleanup" },
+  { id: "heavy_equipment_washing", label: "Heavy Equipment Washing" },
+  { id: "industrial_cleaning", label: "Industrial / Warehouse Cleaning" },
+  { id: "parking_garage", label: "Parking Garage / Lot" },
 ];
 
 const STATUS_COLORS: Record<string, string> = {

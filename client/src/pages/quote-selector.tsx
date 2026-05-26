@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Droplets, Home, Calculator, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Droplets, Home, Calculator, CheckCircle2, HardHat } from "lucide-react";
 import sampleQuoteImg from "@assets/IMG_2219_1761232978605.jpeg";
 
 export default function QuoteSelector() {
@@ -16,7 +16,7 @@ export default function QuoteSelector() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Paver Restoration Quote */}
           <Card className="relative hover:shadow-xl transition-shadow">
             <Badge className="absolute -top-3 -right-3" variant="default">
@@ -70,6 +70,63 @@ export default function QuoteSelector() {
                   <Link href="/quote/restoration">
                     <Calculator className="mr-2 h-4 w-4" />
                     Get Restoration Quote
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Commercial & Specialty Quote */}
+          <Card className="relative hover:shadow-xl transition-shadow border-orange-200">
+            <Badge className="absolute -top-3 -right-3 bg-orange-500 text-white">New</Badge>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <HardHat className="h-6 w-6 text-orange-500" />
+                Commercial &amp; Specialty
+              </CardTitle>
+              <CardDescription>
+                Construction cleanup, fleet washing, and heavy equipment services
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <p className="font-semibold">Services include:</p>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-orange-500" />
+                      New construction cleanup
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-orange-500" />
+                      Fleet &amp; vehicle washing
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-orange-500" />
+                      Heavy equipment washing
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="font-semibold">Pricing:</p>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    <li>• Construction: from $0.15/sq ft</li>
+                    <li>• Fleet: from $55/vehicle</li>
+                    <li>• Equipment: from $135/unit</li>
+                  </ul>
+                </div>
+
+                <div className="pt-2">
+                  <p className="text-sm text-muted-foreground mb-2">Contract discounts:</p>
+                  <p className="text-lg font-semibold">Up to 15% off recurring service</p>
+                </div>
+
+                <Button asChild className="w-full bg-orange-500 hover:bg-orange-600" size="lg">
+                  <Link href="/commercial-quote">
+                    <Calculator className="mr-2 h-4 w-4" />
+                    Get Commercial Quote
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
