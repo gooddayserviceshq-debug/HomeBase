@@ -64,6 +64,62 @@ const REVENUE_TARGET_10K = 10000;
 
 // ─── Strategy playbook ───────────────────────────────────────────────────────
 
+// ─── Rutherford County prospect tiers ────────────────────────────────────────
+
+const RC_PROSPECTS = [
+  {
+    tier: 1, tierLabel: "Industrial / Manufacturing", color: "border-orange-300 bg-orange-50",
+    badge: "bg-orange-100 text-orange-700",
+    why: "Highest per-job value. Topre = $9,200. These companies have dirty facilities, large equipment, and big maintenance budgets.",
+    companies: [
+      { name: "Nissan Smyrna Plant", address: "983 Nissan Dr, Smyrna 37167", phone: "Get intro via Topre's Ed", service: "Facility + Equipment", est: "$10,000–$20,000", action: "Ask Topre's Ed for an intro to their facilities contact" },
+      { name: "Bridgestone Americas", address: "La Vergne 37086", phone: "Find via switchboard", service: "Heavy Equipment + Parking", est: "$5,000–$12,000", action: "Call main line, ask for Facilities or Maintenance Manager" },
+      { name: "Schneider Electric", address: "Smyrna 37167", phone: "Find via switchboard", service: "Facility Exterior", est: "$3,000–$6,000", action: "900 employees, large campus. Call facilities dept." },
+      { name: "General Mills", address: "Murfreesboro 37129", phone: "Find via switchboard", service: "Industrial Cleaning", est: "$4,000–$8,000", action: "Food plant = high sanitation standards = premium rates" },
+    ],
+  },
+  {
+    tier: 2, tierLabel: "Property Management", color: "border-blue-300 bg-blue-50",
+    badge: "bg-blue-100 text-blue-700",
+    why: "One contract = recurring monthly revenue. MMC alone could be $2,400/mo across their apartment portfolio.",
+    companies: [
+      { name: "MMC Properties", address: "Murfreesboro 37130", phone: "615-849-9006", service: "Apartment Exteriors", est: "$600–$2,400/mo", action: "Call 615-849-9006 today — ask for property manager" },
+      { name: "Real Property Management", address: "Murfreesboro + surrounding", phone: "615-900-4067", service: "Portfolio Exterior Washing", est: "$500–$3,000/mo", action: "Call 615-900-4067, pitch quarterly contract" },
+      { name: "Stones River Property Mgmt", address: "Murfreesboro", phone: "Via website", service: "Seasonal Cleaning Packages", est: "$1,000–$2,000/season", action: "Largest Middle TN PM — submit quote request via website" },
+      { name: "Cedar Management Group (HOA)", address: "Murfreesboro", phone: "Via website", service: "HOA Common Areas", est: "$500–$1,500/property", action: "HOAs pay for driveway + sidewalk + entrance washing" },
+    ],
+  },
+  {
+    tier: 3, tierLabel: "General Contractors", color: "border-green-300 bg-green-50",
+    badge: "bg-green-100 text-green-700",
+    why: "Post-construction cleanup is a one-call-close. Reference the $9,200 Topre job as your proof.",
+    companies: [
+      { name: "Dow Smith Company", address: "Smyrna 37167", phone: "dowsmith.com", service: "Post-Construction Cleanup", est: "$2,000–$8,000/job", action: "Active design-build in Smyrna. Closest GC to Topre job." },
+      { name: "Wright Construction", address: "Murfreesboro 37130", phone: "wrightconstruction.us", service: "Post-Construction Cleanup", est: "$1,500–$5,000/job", action: "50 years local — they value reliable vendors. Walk in." },
+      { name: "Pinnacle Building Services", address: "Murfreesboro 37130", phone: "Via website", service: "Post-Roof Cleanup", est: "$800–$2,000/job", action: "150+ commercial roofs. Partner for debris cleanup after installs." },
+    ],
+  },
+  {
+    tier: 4, tierLabel: "Fleet & Trucking", color: "border-purple-300 bg-purple-50",
+    badge: "bg-purple-100 text-purple-700",
+    why: "Monthly contracts. GFC Cartage has a phone number — call them first.",
+    companies: [
+      { name: "GFC Cartage LLC", address: "291 11th Ave, Smyrna 37167", phone: "615-462-7905", service: "Fleet Washing", est: "$600–$1,500/mo", action: "CALL NOW — 615-462-7905. 19 years in business, Smyrna." },
+      { name: "IKE Transportation", address: "Murfreesboro 37130", phone: "iketrans.com", service: "Flatbed Fleet Washing", est: "$800–$2,000/mo", action: "Flatbeds get filthy. Monthly wash contract." },
+      { name: "Somerset Logistics", address: "Murfreesboro 37130", phone: "somersetlogistics.com", service: "Fleet + Referrals", est: "$500–$1,000/mo", action: "Veteran-owned — lead with that. Referral network potential." },
+    ],
+  },
+  {
+    tier: 5, tierLabel: "Auto Dealerships", color: "border-gray-300 bg-gray-50",
+    badge: "bg-gray-100 text-gray-700",
+    why: "Lower value per job but quick to close. Walk in with a demo offer.",
+    companies: [
+      { name: "Murfreesboro Hyundai", address: "Murfreesboro 37129", phone: "Walk in", service: "Lot + Vehicle Washing", est: "$400–$800/mo", action: "Walk in Tuesday AM, offer free demo wash on their dirtiest car" },
+      { name: "Speedway Motors", address: "Murfreesboro 37130", phone: "Walk in", service: "Lot Washing", est: "$300–$600/mo", action: "A+ BBB, 20 years — independent = faster decisions" },
+    ],
+  },
+];
+
 const STRATEGY_PLAYS = [
   {
     priority: 1,
@@ -514,6 +570,51 @@ export default function AdminLeads() {
               </p>
             </CardContent>
           </Card>
+
+          {/* Rutherford County Prospects */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold">Rutherford County Prospects — Searched &amp; Ranked</h2>
+              <span className="text-xs text-muted-foreground">17 companies found across 5 categories · All added to pipeline</span>
+            </div>
+            {RC_PROSPECTS.map((tier) => (
+              <Card key={tier.tier} className={`border-2 ${tier.color}`}>
+                <CardHeader className="pb-2 pt-4">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${tier.badge}`}>Tier {tier.tier}</span>
+                    <CardTitle className="text-sm">{tier.tierLabel}</CardTitle>
+                  </div>
+                  <p className="text-xs text-muted-foreground italic">{tier.why}</p>
+                </CardHeader>
+                <CardContent className="pb-4">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="text-left text-muted-foreground border-b">
+                          <th className="pb-1.5 pr-3 font-medium">Company</th>
+                          <th className="pb-1.5 pr-3 font-medium">Phone / Contact</th>
+                          <th className="pb-1.5 pr-3 font-medium">Service</th>
+                          <th className="pb-1.5 pr-3 font-medium">Est. Value</th>
+                          <th className="pb-1.5 font-medium">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tier.companies.map((c, i) => (
+                          <tr key={i} className="border-b last:border-0">
+                            <td className="py-1.5 pr-3 font-semibold">{c.name}</td>
+                            <td className="py-1.5 pr-3 text-muted-foreground">{c.phone}</td>
+                            <td className="py-1.5 pr-3">{c.service}</td>
+                            <td className="py-1.5 pr-3 font-medium text-primary">{c.est}</td>
+                            <td className="py-1.5 text-muted-foreground leading-snug">{c.action}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
           {/* Gap to target */}
           <Card className="border-blue-200 bg-blue-50/30">
