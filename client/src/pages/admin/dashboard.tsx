@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   Plus, Package, ShoppingCart, DollarSign, Users,
   Edit, Trash2, Eye, MoreVertical, TrendingUp, Calendar,
-  Receipt, Layers, Briefcase, Instagram, Star, Home, BarChart3
+  Receipt, Layers, Briefcase, Instagram, Star, Home, BarChart3, FileText
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
@@ -85,7 +85,8 @@ type AdminSection =
   | "inventory"
   | "hiring"
   | "social"
-  | "reviews";
+  | "reviews"
+  | "contracts";
 
 const NAV_ITEMS: { key: AdminSection; label: string; icon: React.ReactNode; badge?: string }[] = [
   { key: "overview", label: "Overview", icon: <Home className="w-4 h-4" /> },
@@ -98,6 +99,7 @@ const NAV_ITEMS: { key: AdminSection; label: string; icon: React.ReactNode; badg
   { key: "social", label: "Social Media", icon: <Instagram className="w-4 h-4" /> },
   { key: "reviews", label: "Reviews", icon: <Star className="w-4 h-4" /> },
   { key: "advertising", label: "Advertising", icon: <BarChart3 className="w-4 h-4" /> },
+  { key: "contracts", label: "Contracts", icon: <FileText className="w-4 h-4" /> },
 ];
 
 export default function AdminDashboard() {
@@ -568,6 +570,18 @@ export default function AdminDashboard() {
 
         {/* Advertising */}
         {section === "advertising" && <AdvertisingBuilder />}
+
+        {/* Contracts — redirect to dedicated contracts page */}
+        {section === "contracts" && (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold">Contracts</h2>
+            <p className="text-muted-foreground">Manage client service agreements.</p>
+            <a href="/admin/contracts" className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90">
+              <FileText className="w-4 h-4" />
+              Open Contracts Manager
+            </a>
+          </div>
+        )}
       </main>
 
       {/* Product Dialog */}

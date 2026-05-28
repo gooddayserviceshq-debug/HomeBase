@@ -426,6 +426,45 @@ export type BookingQuoteResponse = {
   squareFootage: number;
 };
 
+// Commercial Contracts Schema
+export const contracts = pgTable("contracts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  contractNumber: text("contract_number").notNull().unique(),
+  clientName: text("client_name").notNull(),
+  clientEmail: text("client_email").notNull(),
+  clientPhone: text("client_phone").notNull(),
+  clientCompany: text("client_company"),
+  serviceAddress: text("service_address").notNull(),
+  serviceTypes: jsonb("service_types").$type<string[]>().notNull().default([]),
+  contractType: text("contract_type").notNull().default("one_time"), // one_time | recurring
+  frequency: text("frequency").notNull().default("one_time"), // one_time | weekly | biweekly | monthly | quarterly
+  rate: decimal("rate", { precision: 10, scale: 2 }).notNull(),
+  rateUnit: text("rate_unit").notNull().default("per_visit"), // per_visit | per_month | per_sqft | per_hour
+  paymentDue: text("payment_due").notNull().default("upon_completion"), // upon_completion | net_7 | net_14 | net_30
+  lateFeePercent: integer("late_fee_percent").notNull().default(5),
+  cancellationNoticeDays: integer("cancellation_notice_days").notNull().default(2),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date"),
+  status: text("status").notNull().default("draft"), // draft | sent | signed | active | completed | cancelled
+  notes: text("notes"),
+  signedAt: timestamp("signed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertContractSchema = createInsertSchema(contracts).omit({
+  id: true,
+  contractNumber: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateContractSchema = insertContractSchema.partial();
+
+export type Contract = typeof contracts.$inferSelect;
+export type InsertContract = z.infer<typeof insertContractSchema>;
+export type UpdateContract = z.infer<typeof updateContractSchema>;
+
 // Customer Inquiry Schema
 export const customerInquiries = pgTable("customer_inquiries", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

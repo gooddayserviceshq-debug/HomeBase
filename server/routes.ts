@@ -1197,6 +1197,107 @@ Follow the platform format requirements exactly. Make each variation feel distin
     res.json(updated);
   });
 
+  // Andromada — Blake's personal AI chief of staff (streaming)
+  function buildAndromadaSystemPrompt(context?: string): string {
+    const base = `You are Andromada, Blake McConnell's personal AI chief of staff and strategic partner. Blake is the founder and CEO of Good Day Services (GDS) — a pressure washing and paver restoration company in Murfreesboro, Tennessee — and is actively building other ventures alongside it.
+
+You are NOT a cheerleader or a yes-machine. You are the person who keeps Blake honest, connects threads he might miss, and tells him the hard thing when it needs to be said. You make him feel good when he earns it — not by default.
+
+## Your Core Job
+1. **Connect the dots** — Blake works across multiple platforms and projects simultaneously: Google Drive for documents and business assets, Claude AI for content and automation, video marketing for one or more companies, HomeBase (this platform) for GDS operations. When he mentions one, you think about how it connects to the others. You surface conflicts, overlaps, and the through-line.
+2. **Keep him grounded** — If Blake is spinning up a new initiative before finishing the last one, say it. If a plan sounds good but has a real gap, name the gap. Praise that isn't earned means nothing.
+3. **Real strategic value** — Don't just answer the question asked. Answer the question behind it. What does Blake actually need to move forward?
+
+## Honest Advisor Rules
+- If Blake is doing three things and only one of them actually matters this week, tell him which one and why
+- If an idea is solid, say so and build on it — but don't inflate it
+- If an idea has a real problem, name the problem before the encouragement
+- If he's been stalled on something in his stack, notice it and bring it up
+- Never say "great question" or "absolutely" or "certainly" — that's filler, not value
+- Don't be harsh for the sake of it — be honest for the sake of progress
+
+## Blake's Business Ecosystem
+**Good Day Services (GDS):**
+- Paver & Surface Restoration: driveways, patios, walkways, pool decks. Tiers: Basic (~$0.25–0.40/sq ft + $0.75 acrylic sealer), Recommended (+ polymeric sand $0.50/sq ft), Premium (penetrating siloxane sealer $1.25/sq ft). Condition multipliers: 1.0× lightly dirty, 1.25× heavily soiled, 1.5× stained/damaged.
+- Property Cleaning: full exterior — driveway ($300), roof soft wash ($300), siding ($300), gutters ($300), fence ($75–$150/side). $975 minimum.
+- Products: professional-grade restoration supplies sold online.
+- Territory: Murfreesboro, TN and surrounding Middle Tennessee. Phone: 615-390-9779.
+
+**HomeBase Platform:** TypeScript/React/Express app with Postgres, Drizzle ORM, Claude AI. Manages quotes, bookings, customer inquiries, e-commerce, warranties, admin and CEO dashboards, AI receptionist.
+
+**Other ventures:** Blake is building beyond GDS. When he shares what's in motion, take it seriously and advise on it as a real business.
+
+## Cross-Platform Awareness
+Blake's typical tool stack:
+- **Google Drive** — contracts, business documents, asset libraries, SOPs, templates
+- **Claude AI** — content generation, automation, strategy ideation, ad copy
+- **Video Marketing** — social content, brand building for GDS or other companies
+- **HomeBase** — GDS operations, customer management, booking, analytics
+
+When Blake mentions progress on one, ask or consider: how does this connect to the others? Is he building in the right order? What's the dependency chain?
+
+## Your Style
+- Direct, confident, and warm — not corporate, not casual-lazy
+- Short when short is right; deep when depth is needed
+- Match his energy but don't just mirror it — sometimes he needs a different gear
+- You have a name and a perspective. Use both
+- When structuring an idea: core insight → why it matters now → what's the actual next action
+
+Today: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.
+Blake's email: blakemcconnell1215@gmail.com`;
+
+    if (context && context.trim()) {
+      return `${base}\n\n## Blake's Active Stack (live context from his tracker)\n${context}\n\nUse this to inform your responses. If something has been stalled, notice it. If he's working on things that should be sequenced differently, bring it up.`;
+    }
+
+    return base;
+  }
+
+  app.post("/api/andromada/chat", async (req, res) => {
+    const { messages, context } = req.body;
+
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ error: "messages must be an array" });
+    }
+
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return res.status(503).json({ error: "Andromada not configured" });
+    }
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+
+    try {
+      const anthropic = new Anthropic({ apiKey });
+      const stream = anthropic.messages.stream({
+        model: "claude-opus-4-7",
+        max_tokens: 2048,
+        thinking: { type: "adaptive" },
+        system: buildAndromadaSystemPrompt(context),
+        messages,
+      });
+
+      for await (const event of stream) {
+        if (
+          event.type === "content_block_delta" &&
+          event.delta.type === "text_delta"
+        ) {
+          res.write(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`);
+        }
+      }
+
+      res.write("data: [DONE]\n\n");
+    } catch (error: any) {
+      res.write(
+        `data: ${JSON.stringify({ error: error.message || "Request failed" })}\n\n`
+      );
+    } finally {
+      res.end();
+    }
+  });
+
   // AI Receptionist chat endpoint (streaming)
   app.post("/api/receptionist/chat", async (req, res) => {
     const { messages } = req.body;
@@ -1671,6 +1772,299 @@ Follow the platform format requirements exactly. Make each variation feel distin
       res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
     } finally {
       res.end();
+    }
+  });
+
+  // Contract routes
+  app.get("/api/contracts", isAuthenticated, async (_req, res) => {
+    try {
+      const contracts = await storage.getContracts();
+      res.json(contracts);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch contracts" });
+    }
+  });
+
+  app.get("/api/contracts/:id", isAuthenticated, async (req, res) => {
+    try {
+      const contract = await storage.getContract(req.params.id);
+      if (!contract) return res.status(404).json({ message: "Contract not found" });
+      res.json(contract);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch contract" });
+    }
+  });
+
+  app.post("/api/contracts", isAuthenticated, async (req, res) => {
+    try {
+      const { insertContractSchema } = await import("@shared/schema");
+      const data = insertContractSchema.parse(req.body);
+      const contract = await storage.createContract(data);
+      res.status(201).json(contract);
+    } catch (error: any) {
+      if (error.name === "ZodError") return res.status(400).json({ message: "Invalid contract data", errors: error.errors });
+      res.status(500).json({ message: "Failed to create contract" });
+    }
+  });
+
+  app.patch("/api/contracts/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { updateContractSchema } = await import("@shared/schema");
+      const data = updateContractSchema.parse(req.body);
+      const contract = await storage.updateContract(req.params.id, data);
+      if (!contract) return res.status(404).json({ message: "Contract not found" });
+      res.json(contract);
+    } catch (error: any) {
+      if (error.name === "ZodError") return res.status(400).json({ message: "Invalid contract data", errors: error.errors });
+      res.status(500).json({ message: "Failed to update contract" });
+    }
+  });
+
+  app.delete("/api/contracts/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteContract(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete contract" });
+    }
+  });
+
+  // CFO Advisor endpoints
+  app.get("/api/cfo/analysis", isAuthenticated, async (_req, res) => {
+    try {
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) return res.status(500).json({ message: "AI service not configured" });
+
+      const [
+        restorationQuotes,
+        cleaningQuotes,
+        orders,
+        warranties,
+        inquiries,
+        products,
+        contracts,
+      ] = await Promise.all([
+        storage.getQuoteRequests(),
+        storage.getPropertyCleaningQuotes(),
+        storage.getOrders(),
+        storage.getWarranties(),
+        storage.getCustomerInquiries(),
+        storage.getProducts(),
+        storage.getContracts(),
+      ]);
+
+      // --- Financial metric calculations ---
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+      const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+
+      const productRevenue = orders.reduce((s, o) => s + parseFloat(o.total), 0);
+      const contractRevenue = contracts
+        .filter(c => c.status === "active" || c.status === "signed")
+        .reduce((s, c) => s + (parseFloat(c.rate) || 0), 0);
+
+      const restorationPipeline = restorationQuotes.reduce((s, q) => {
+        const p = q.selectedTier === "basic" ? parseFloat(q.basicTierPrice) :
+                  q.selectedTier === "recommended" ? parseFloat(q.recommendedTierPrice) :
+                  parseFloat(q.premiumTierPrice);
+        return s + (isNaN(p) ? 0 : p);
+      }, 0);
+      const cleaningPipeline = cleaningQuotes.reduce((s, q) => s + parseFloat(q.finalTotal), 0);
+
+      const estimatedServiceRevenue = (restorationPipeline + cleaningPipeline) * 0.30;
+      const totalEstimatedRevenue = productRevenue + estimatedServiceRevenue + contractRevenue;
+
+      const recentOrders = orders.filter(o => new Date(o.createdAt) >= thirtyDaysAgo);
+      const prevOrders = orders.filter(o => {
+        const d = new Date(o.createdAt);
+        return d >= sixtyDaysAgo && d < thirtyDaysAgo;
+      });
+      const recentOrderRevenue = recentOrders.reduce((s, o) => s + parseFloat(o.total), 0);
+      const prevOrderRevenue = prevOrders.reduce((s, o) => s + parseFloat(o.total), 0);
+      const revenueGrowth = prevOrderRevenue > 0
+        ? ((recentOrderRevenue - prevOrderRevenue) / prevOrderRevenue * 100).toFixed(1)
+        : "N/A";
+
+      const recentQuotes = [...restorationQuotes, ...cleaningQuotes].filter(
+        q => new Date(q.createdAt) >= thirtyDaysAgo
+      );
+      const prevQuotes = [...restorationQuotes, ...cleaningQuotes].filter(q => {
+        const d = new Date(q.createdAt);
+        return d >= sixtyDaysAgo && d < thirtyDaysAgo;
+      });
+
+      const tierBreakdown = { basic: 0, recommended: 0, premium: 0 };
+      restorationQuotes.forEach(q => {
+        if (q.selectedTier && tierBreakdown[q.selectedTier as keyof typeof tierBreakdown] !== undefined) {
+          tierBreakdown[q.selectedTier as keyof typeof tierBreakdown]++;
+        }
+      });
+
+      const avgOrderValue = orders.length > 0 ? productRevenue / orders.length : 0;
+      const avgRestorationValue = restorationQuotes.length > 0
+        ? restorationPipeline / restorationQuotes.length : 0;
+      const avgCleaningValue = cleaningQuotes.length > 0
+        ? cleaningPipeline / cleaningQuotes.length : 0;
+
+      const uniqueEmails = new Set([
+        ...restorationQuotes.map(q => q.email),
+        ...cleaningQuotes.map(q => q.customerEmail),
+        ...orders.map(o => o.email),
+      ]);
+
+      const activeContracts = contracts.filter(c => c.status === "active");
+      const lowStockProducts = products.filter(
+        p => p.stockQuantity !== null && p.stockQuantity <= (p.lowStockThreshold ?? 5)
+      );
+      const activeWarranties = warranties.filter(w => w.status === "active");
+      const pendingInquiries = inquiries.filter(i => i.status === "new");
+
+      // Monthly revenue for trend (last 6 months)
+      const monthlyRevenue: Record<string, number> = {};
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        monthlyRevenue[d.toISOString().slice(0, 7)] = 0;
+      }
+      orders.forEach(o => {
+        const month = new Date(o.createdAt).toISOString().slice(0, 7);
+        if (month in monthlyRevenue) monthlyRevenue[month] += parseFloat(o.total);
+      });
+
+      const financialSummary = {
+        revenue: {
+          totalEstimated: totalEstimatedRevenue,
+          productRevenue,
+          estimatedServiceRevenue,
+          contractRevenue,
+          recentMonthRevenue: recentOrderRevenue,
+          prevMonthRevenue: prevOrderRevenue,
+          revenueGrowthPct: revenueGrowth,
+          monthlyTrend: Object.entries(monthlyRevenue).map(([month, amount]) => ({ month, amount })),
+        },
+        pipeline: {
+          totalQuotes: restorationQuotes.length + cleaningQuotes.length,
+          restorationQuotes: restorationQuotes.length,
+          cleaningQuotes: cleaningQuotes.length,
+          pipelineValue: restorationPipeline + cleaningPipeline,
+          recentQuotes30d: recentQuotes.length,
+          prevQuotes30d: prevQuotes.length,
+          avgRestorationValue,
+          avgCleaningValue,
+          tierBreakdown,
+          estimatedConversionRate: 30,
+        },
+        customers: {
+          totalUnique: uniqueEmails.size,
+          pendingInquiries: pendingInquiries.length,
+        },
+        contracts: {
+          total: contracts.length,
+          active: activeContracts.length,
+          draft: contracts.filter(c => c.status === "draft").length,
+          totalContractValue: contractRevenue,
+        },
+        products: {
+          totalProducts: products.length,
+          totalOrders: orders.length,
+          avgOrderValue,
+          lowStockCount: lowStockProducts.length,
+        },
+        warranties: {
+          active: activeWarranties.length,
+          expired: warranties.filter(w => w.status === "expired").length,
+          claimed: warranties.filter(w => w.status === "claimed").length,
+        },
+        minimumJobSize: 975,
+      };
+
+      // Call Claude for CFO analysis
+      const anthropic = new Anthropic({ apiKey });
+      const message = await anthropic.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 2000,
+        system: `You are the virtual CFO for Good Day Services (Good Day Pressure Washing), a pressure washing and property cleaning company in Murfreesboro, Tennessee. You provide concise, actionable financial advice based on real business data. Format your response as JSON with exactly these keys: { "headline": string, "healthScore": number (0-100), "revenueInsight": string, "pricingInsight": string, "growthOpportunity": string, "riskAlert": string, "topRecommendations": string[] (3-5 items), "cashFlowNote": string }. Keep each field to 1-2 sentences. Be direct and specific with numbers from the data.`,
+        messages: [
+          {
+            role: "user",
+            content: `Analyze this Good Day Services financial data and provide CFO-level insights:\n\n${JSON.stringify(financialSummary, null, 2)}`,
+          },
+        ],
+      });
+
+      const rawText = message.content[0].type === "text" ? message.content[0].text : "{}";
+      let aiAnalysis: Record<string, unknown> = {};
+      try {
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        aiAnalysis = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+      } catch {
+        aiAnalysis = { headline: "Analysis unavailable", healthScore: 0 };
+      }
+
+      res.json({ financialSummary, aiAnalysis });
+    } catch (error) {
+      console.error("CFO Analysis Error:", error);
+      res.status(500).json({ message: "Failed to generate CFO analysis" });
+    }
+  });
+
+  app.post("/api/cfo/chat", isAuthenticated, async (req: any, res) => {
+    try {
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) return res.status(500).json({ message: "AI service not configured" });
+
+      const { message, conversationHistory } = req.body;
+      if (!message || typeof message !== "string") {
+        return res.status(400).json({ message: "Message is required" });
+      }
+
+      const [restorationQuotes, cleaningQuotes, orders, contracts, products] = await Promise.all([
+        storage.getQuoteRequests(),
+        storage.getPropertyCleaningQuotes(),
+        storage.getOrders(),
+        storage.getContracts(),
+        storage.getProducts(),
+      ]);
+
+      const productRevenue = orders.reduce((s, o) => s + parseFloat(o.total), 0);
+      const restorationPipeline = restorationQuotes.reduce((s, q) => {
+        const p = q.selectedTier === "basic" ? parseFloat(q.basicTierPrice) :
+                  q.selectedTier === "recommended" ? parseFloat(q.recommendedTierPrice) :
+                  parseFloat(q.premiumTierPrice);
+        return s + (isNaN(p) ? 0 : p);
+      }, 0);
+      const cleaningPipeline = cleaningQuotes.reduce((s, q) => s + parseFloat(q.finalTotal), 0);
+
+      const contextSnapshot = {
+        totalProductRevenue: productRevenue,
+        restorationPipeline,
+        cleaningPipeline,
+        estimatedRevenue: productRevenue + (restorationPipeline + cleaningPipeline) * 0.30,
+        totalQuotes: restorationQuotes.length + cleaningQuotes.length,
+        totalOrders: orders.length,
+        activeContracts: contracts.filter(c => c.status === "active").length,
+        totalProducts: products.length,
+        minimumJobSize: 975,
+      };
+
+      const anthropic = new Anthropic({ apiKey });
+      const history = Array.isArray(conversationHistory) ? conversationHistory.slice(-10) : [];
+
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 600,
+        system: `You are the virtual CFO for Good Day Services, a pressure washing and property cleaning company in Murfreesboro, Tennessee. You have access to their live business data (snapshot below). Provide concise, expert financial guidance. Answer in 2-4 sentences unless detail is needed. Current business snapshot: ${JSON.stringify(contextSnapshot)}`,
+        messages: [
+          ...history,
+          { role: "user", content: message },
+        ],
+      });
+
+      const reply = response.content[0].type === "text" ? response.content[0].text : "I couldn't generate a response.";
+      res.json({ reply });
+    } catch (error) {
+      console.error("CFO Chat Error:", error);
+      res.status(500).json({ message: "Failed to process CFO chat message" });
     }
   });
 

@@ -16,10 +16,13 @@ import Documents from "@/pages/documents";
 import Warranties from "@/pages/warranties";
 import Contact from "@/pages/Contact";
 import AdminDashboard from "@/pages/admin/dashboard";
+import AdminContracts from "@/pages/admin/contracts";
 import CEODashboard from "@/pages/ceo-dashboard";
+import CFODashboard from "@/pages/cfo-dashboard";
 import Book from "@/pages/book";
 import CustomerDashboard from "@/pages/customer-dashboard";
 import Careers from "@/pages/careers";
+import Andromada from "@/pages/andromada";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -37,8 +40,11 @@ function Router() {
       <Route path="/book" component={Book} />
       <Route path="/my-appointments" component={CustomerDashboard} />
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/contracts" component={AdminContracts} />
       <Route path="/ceo-dashboard" component={CEODashboard} />
       <Route path="/careers" component={Careers} />
+      <Route path="/cfo-dashboard" component={CFODashboard} />
+      <Route path="/andromada" component={Andromada} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -41,6 +41,9 @@ import {
   type InsertSocialPost,
   type GbpReview,
   type InsertGbpReview,
+  type Contract,
+  type InsertContract,
+  type UpdateContract,
   users as usersTable,
   quoteRequests as quoteRequestsTable,
   categories as categoriesTable,
@@ -62,6 +65,7 @@ import {
   jobApplications as jobApplicationsTable,
   socialPosts as socialPostsTable,
   gbpReviews as gbpReviewsTable,
+  contracts as contractsTable,
 } from "@shared/schema";
 import { eq, desc, asc } from "drizzle-orm";
 import { db } from "./db";
@@ -191,6 +195,13 @@ export interface IStorage {
   getGbpReview(id: string): Promise<GbpReview | undefined>;
   createGbpReview(review: InsertGbpReview): Promise<GbpReview>;
   updateGbpReviewReply(id: string, replyText: string): Promise<GbpReview | undefined>;
+
+  // Contract operations
+  getContracts(): Promise<Contract[]>;
+  getContract(id: string): Promise<Contract | undefined>;
+  createContract(contract: InsertContract): Promise<Contract>;
+  updateContract(id: string, updates: UpdateContract): Promise<Contract | undefined>;
+  deleteContract(id: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -215,6 +226,7 @@ export class MemStorage implements IStorage {
   private jobApplicationsMap: Map<string, JobApplication>;
   private socialPostsMap: Map<string, SocialPost>;
   private gbpReviewsMap: Map<string, GbpReview>;
+  private contracts: Map<string, Contract>;
 
   constructor() {
     this.quoteRequests = new Map();
@@ -238,6 +250,7 @@ export class MemStorage implements IStorage {
     this.jobApplicationsMap = new Map();
     this.socialPostsMap = new Map();
     this.gbpReviewsMap = new Map();
+    this.contracts = new Map();
 
     // Initialize with sample products
     this.initializeSampleData();
@@ -1122,7 +1135,7 @@ export class MemStorage implements IStorage {
   async createCustomerInquiry(inquiry: InsertCustomerInquiry): Promise<CustomerInquiry> {
     const id = randomUUID();
     const now = new Date();
-    
+
     const newInquiry: CustomerInquiry = {
       ...inquiry,
       id,
@@ -1132,9 +1145,73 @@ export class MemStorage implements IStorage {
       createdAt: now,
       updatedAt: now,
     };
-    
+
     this.customerInquiries.set(id, newInquiry);
     return newInquiry;
+  }
+
+  // Contract operations
+  async getContracts(): Promise<Contract[]> {
+    return Array.from(this.contracts.values()).sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+    );
+  }
+
+  async getContract(id: string): Promise<Contract | undefined> {
+    return this.contracts.get(id);
+  }
+
+  async createContract(contract: InsertContract): Promise<Contract> {
+    const id = randomUUID();
+    const now = new Date();
+    const count = this.contracts.size + 1;
+    const contractNumber = `GDS-C-${String(count).padStart(4, "0")}`;
+
+    const newContract: Contract = {
+      ...contract,
+      id,
+      contractNumber,
+      clientCompany: contract.clientCompany ?? null,
+      endDate: contract.endDate ? new Date(contract.endDate) : null,
+      notes: contract.notes ?? null,
+      signedAt: contract.signedAt ? new Date(contract.signedAt) : null,
+      serviceTypes: (contract.serviceTypes ?? []) as string[],
+      rate: String(contract.rate),
+      lateFeePercent: contract.lateFeePercent ?? 5,
+      cancellationNoticeDays: contract.cancellationNoticeDays ?? 2,
+      status: contract.status ?? "draft",
+      contractType: contract.contractType ?? "one_time",
+      frequency: contract.frequency ?? "one_time",
+      rateUnit: contract.rateUnit ?? "per_visit",
+      paymentDue: contract.paymentDue ?? "upon_completion",
+      startDate: new Date(contract.startDate),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    this.contracts.set(id, newContract);
+    return newContract;
+  }
+
+  async updateContract(id: string, updates: UpdateContract): Promise<Contract | undefined> {
+    const existing = this.contracts.get(id);
+    if (!existing) return undefined;
+    const updated: Contract = {
+      ...existing,
+      ...updates,
+      startDate: updates.startDate ? new Date(updates.startDate) : existing.startDate,
+      endDate: updates.endDate ? new Date(updates.endDate) : existing.endDate,
+      signedAt: updates.signedAt ? new Date(updates.signedAt) : existing.signedAt,
+      rate: updates.rate !== undefined ? String(updates.rate) : existing.rate,
+      serviceTypes: (updates.serviceTypes ?? existing.serviceTypes) as string[],
+      updatedAt: new Date(),
+    };
+    this.contracts.set(id, updated);
+    return updated;
+  }
+
+  async deleteContract(id: string): Promise<void> {
+    this.contracts.delete(id);
   }
 }
 
@@ -1643,6 +1720,31 @@ export class DatabaseStorage implements IStorage {
   async updateGbpReviewReply(id: string, replyText: string): Promise<GbpReview | undefined> {
     const rows = await this.db.update(gbpReviewsTable).set({ replied: true, replyText }).where(eq(gbpReviewsTable.id, id)).returning();
     return rows[0];
+  }
+
+  // ── Contracts ─────────────────────────────────────────────────────────────────
+
+  async getContracts(): Promise<Contract[]> {
+    return this.db.select().from(contractsTable).orderBy(desc(contractsTable.createdAt));
+  }
+
+  async getContract(id: string): Promise<Contract | undefined> {
+    const rows = await this.db.select().from(contractsTable).where(eq(contractsTable.id, id));
+    return rows[0];
+  }
+
+  async createContract(contract: InsertContract): Promise<Contract> {
+    const rows = await this.db.insert(contractsTable).values(contract as any).returning();
+    return rows[0];
+  }
+
+  async updateContract(id: string, updates: UpdateContract): Promise<Contract | undefined> {
+    const rows = await this.db.update(contractsTable).set({ ...updates as any, updatedAt: new Date() }).where(eq(contractsTable.id, id)).returning();
+    return rows[0];
+  }
+
+  async deleteContract(id: string): Promise<void> {
+    await this.db.delete(contractsTable).where(eq(contractsTable.id, id));
   }
 }
 

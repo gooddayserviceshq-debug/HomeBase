@@ -22,8 +22,9 @@ export function Header() {
   
   const isHome = location === "/";
   const isAdmin = location.startsWith("/admin");
+  const isAndromada = location === "/andromada";
 
-  if (isAdmin) {
+  if (isAdmin || isAndromada) {
     return null;
   }
 
