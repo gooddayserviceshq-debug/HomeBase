@@ -1390,6 +1390,190 @@ Blake's email: blakemcconnell1215@gmail.com`;
     }
   });
 
+  // ─── Adjuster Territory Management Routes ─────────────────────────────────
+
+  // Adjusters
+  app.get("/api/adjusters", isAuthenticated, async (_req, res) => {
+    try {
+      res.json(await storage.getAdjusters());
+    } catch {
+      res.status(500).json({ message: "Failed to fetch adjusters" });
+    }
+  });
+
+  app.post("/api/adjusters", isAuthenticated, async (req, res) => {
+    try {
+      const { insertAdjusterSchema } = await import("@shared/schema");
+      const data = insertAdjusterSchema.parse(req.body);
+      res.status(201).json(await storage.createAdjuster(data));
+    } catch (error: any) {
+      if (error.name === "ZodError") return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      res.status(500).json({ message: "Failed to create adjuster" });
+    }
+  });
+
+  app.get("/api/adjusters/:id", isAuthenticated, async (req, res) => {
+    try {
+      const adjuster = await storage.getAdjuster(req.params.id);
+      if (!adjuster) return res.status(404).json({ message: "Adjuster not found" });
+      res.json(adjuster);
+    } catch {
+      res.status(500).json({ message: "Failed to fetch adjuster" });
+    }
+  });
+
+  app.patch("/api/adjusters/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { updateAdjusterSchema } = await import("@shared/schema");
+      const data = updateAdjusterSchema.parse(req.body);
+      const adjuster = await storage.updateAdjuster(req.params.id, data);
+      if (!adjuster) return res.status(404).json({ message: "Adjuster not found" });
+      res.json(adjuster);
+    } catch (error: any) {
+      if (error.name === "ZodError") return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      res.status(500).json({ message: "Failed to update adjuster" });
+    }
+  });
+
+  app.delete("/api/adjusters/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteAdjuster(req.params.id);
+      res.status(204).send();
+    } catch {
+      res.status(500).json({ message: "Failed to delete adjuster" });
+    }
+  });
+
+  // Territories
+  app.get("/api/territories", isAuthenticated, async (_req, res) => {
+    try {
+      res.json(await storage.getTerritories());
+    } catch {
+      res.status(500).json({ message: "Failed to fetch territories" });
+    }
+  });
+
+  app.post("/api/territories", isAuthenticated, async (req, res) => {
+    try {
+      const { insertTerritorySchema } = await import("@shared/schema");
+      const data = insertTerritorySchema.parse(req.body);
+      res.status(201).json(await storage.createTerritory(data));
+    } catch (error: any) {
+      if (error.name === "ZodError") return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      res.status(500).json({ message: "Failed to create territory" });
+    }
+  });
+
+  app.get("/api/territories/:id", isAuthenticated, async (req, res) => {
+    try {
+      const territory = await storage.getTerritory(req.params.id);
+      if (!territory) return res.status(404).json({ message: "Territory not found" });
+      res.json(territory);
+    } catch {
+      res.status(500).json({ message: "Failed to fetch territory" });
+    }
+  });
+
+  app.patch("/api/territories/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { updateTerritorySchema } = await import("@shared/schema");
+      const data = updateTerritorySchema.parse(req.body);
+      const territory = await storage.updateTerritory(req.params.id, data);
+      if (!territory) return res.status(404).json({ message: "Territory not found" });
+      res.json(territory);
+    } catch (error: any) {
+      if (error.name === "ZodError") return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      res.status(500).json({ message: "Failed to update territory" });
+    }
+  });
+
+  app.delete("/api/territories/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteTerritory(req.params.id);
+      res.status(204).send();
+    } catch {
+      res.status(500).json({ message: "Failed to delete territory" });
+    }
+  });
+
+  // Adjuster Claims
+  app.get("/api/adjuster-claims", isAuthenticated, async (req, res) => {
+    try {
+      const { status, adjusterId, county, priority } = req.query as Record<string, string>;
+      res.json(await storage.getAdjusterClaims({
+        status: status || undefined,
+        adjusterId: adjusterId || undefined,
+        county: county || undefined,
+        priority: priority || undefined,
+      }));
+    } catch {
+      res.status(500).json({ message: "Failed to fetch claims" });
+    }
+  });
+
+  app.post("/api/adjuster-claims", isAuthenticated, async (req, res) => {
+    try {
+      const { insertAdjusterClaimSchema } = await import("@shared/schema");
+      const data = insertAdjusterClaimSchema.parse(req.body);
+      res.status(201).json(await storage.createAdjusterClaim(data));
+    } catch (error: any) {
+      if (error.name === "ZodError") return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      res.status(500).json({ message: "Failed to create claim" });
+    }
+  });
+
+  app.get("/api/adjuster-claims/:id", isAuthenticated, async (req, res) => {
+    try {
+      const claim = await storage.getAdjusterClaim(req.params.id);
+      if (!claim) return res.status(404).json({ message: "Claim not found" });
+      res.json(claim);
+    } catch {
+      res.status(500).json({ message: "Failed to fetch claim" });
+    }
+  });
+
+  app.patch("/api/adjuster-claims/:id/assign", isAuthenticated, async (req, res) => {
+    try {
+      const { adjusterId } = z.object({ adjusterId: z.string() }).parse(req.body);
+      const claim = await storage.assignAdjusterClaim(req.params.id, adjusterId);
+      if (!claim) return res.status(404).json({ message: "Claim not found" });
+      res.json(claim);
+    } catch (error: any) {
+      if (error.name === "ZodError") return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      res.status(500).json({ message: "Failed to assign claim" });
+    }
+  });
+
+  app.patch("/api/adjuster-claims/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { updateAdjusterClaimSchema } = await import("@shared/schema");
+      const data = updateAdjusterClaimSchema.parse(req.body);
+      const claim = await storage.updateAdjusterClaim(req.params.id, data);
+      if (!claim) return res.status(404).json({ message: "Claim not found" });
+      res.json(claim);
+    } catch (error: any) {
+      if (error.name === "ZodError") return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      res.status(500).json({ message: "Failed to update claim" });
+    }
+  });
+
+  app.delete("/api/adjuster-claims/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteAdjusterClaim(req.params.id);
+      res.status(204).send();
+    } catch {
+      res.status(500).json({ message: "Failed to delete claim" });
+    }
+  });
+
+  app.get("/api/adjuster-stats", isAuthenticated, async (_req, res) => {
+    try {
+      res.json(await storage.getAdjusterStats());
+    } catch {
+      res.status(500).json({ message: "Failed to fetch adjuster stats" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -465,6 +465,92 @@ export type Contract = typeof contracts.$inferSelect;
 export type InsertContract = z.infer<typeof insertContractSchema>;
 export type UpdateContract = z.infer<typeof updateContractSchema>;
 
+// Adjuster Territory Management Schema
+export const adjusters = pgTable("adjusters", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  firstName: varchar("first_name").notNull(),
+  lastName: varchar("last_name").notNull(),
+  email: varchar("email").notNull().unique(),
+  phone: varchar("phone").notNull(),
+  licenseNumber: varchar("license_number").notNull(),
+  status: text("status").notNull().default("active"), // active | inactive | on_leave
+  certifications: jsonb("certifications").$type<string[]>().notNull().default([]),
+  maxCaseload: integer("max_caseload").notNull().default(30),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const territories = pgTable("territories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  code: varchar("code").notNull().unique(), // e.g. "TN-MIDDLE"
+  counties: jsonb("counties").$type<string[]>().notNull().default([]),
+  zipCodes: jsonb("zip_codes").$type<string[]>().notNull().default([]),
+  adjusterId: varchar("adjuster_id").references(() => adjusters.id), // nullable
+  priority: text("priority").notNull().default("standard"), // high | standard | low
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const adjusterClaims = pgTable("adjuster_claims", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  claimNumber: varchar("claim_number").notNull().unique(),
+  adjusterId: varchar("adjuster_id").references(() => adjusters.id),     // nullable
+  territoryId: varchar("territory_id").references(() => territories.id), // nullable
+  policyHolderName: text("policy_holder_name").notNull(),
+  policyHolderPhone: varchar("policy_holder_phone").notNull(),
+  incidentDate: text("incident_date").notNull(),
+  incidentAddress: text("incident_address").notNull(),
+  county: varchar("county").notNull(),
+  zipCode: varchar("zip_code"),
+  vehicleInfo: jsonb("vehicle_info").$type<{ make: string; model: string; year: number; vin?: string }>().notNull(),
+  damageType: text("damage_type").notNull(), // collision | comprehensive | liability | uninsured_motorist | other
+  estimatedDamage: decimal("estimated_damage", { precision: 10, scale: 2 }),
+  status: text("status").notNull().default("unassigned"),
+  // unassigned | assigned | in_progress | inspection_scheduled | pending_estimate | pending_approval | settled | closed
+  priority: text("priority").notNull().default("standard"), // urgent | high | standard | low
+  assignedAt: timestamp("assigned_at"),
+  dueDate: text("due_date"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertAdjusterSchema = createInsertSchema(adjusters).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export const updateAdjusterSchema = insertAdjusterSchema.partial();
+
+export const insertTerritorySchema = createInsertSchema(territories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export const updateTerritorySchema = insertTerritorySchema.partial();
+
+export const insertAdjusterClaimSchema = createInsertSchema(adjusterClaims).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export const updateAdjusterClaimSchema = insertAdjusterClaimSchema.partial();
+
+export type Adjuster = typeof adjusters.$inferSelect;
+export type InsertAdjuster = z.infer<typeof insertAdjusterSchema>;
+export type UpdateAdjuster = z.infer<typeof updateAdjusterSchema>;
+
+export type Territory = typeof territories.$inferSelect;
+export type InsertTerritory = z.infer<typeof insertTerritorySchema>;
+export type UpdateTerritory = z.infer<typeof updateTerritorySchema>;
+
+export type AdjusterClaim = typeof adjusterClaims.$inferSelect;
+export type InsertAdjusterClaim = z.infer<typeof insertAdjusterClaimSchema>;
+export type UpdateAdjusterClaim = z.infer<typeof updateAdjusterClaimSchema>;
+
 // Customer Inquiry Schema
 export const customerInquiries = pgTable("customer_inquiries", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

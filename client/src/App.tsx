@@ -21,6 +21,7 @@ import CEODashboard from "@/pages/ceo-dashboard";
 import Book from "@/pages/book";
 import CustomerDashboard from "@/pages/customer-dashboard";
 import Andromada from "@/pages/andromada";
+import AdjusterTerritory from "@/pages/adjuster-territory";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -41,6 +42,7 @@ function Router() {
       <Route path="/admin/contracts" component={AdminContracts} />
       <Route path="/ceo-dashboard" component={CEODashboard} />
       <Route path="/andromada" component={Andromada} />
+      <Route path="/adjuster-territory" component={AdjusterTerritory} />
       <Route component={NotFound} />
     </Switch>
   );

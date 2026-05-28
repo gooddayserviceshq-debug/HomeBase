@@ -30,6 +30,15 @@ import {
   type Contract,
   type InsertContract,
   type UpdateContract,
+  type Adjuster,
+  type InsertAdjuster,
+  type UpdateAdjuster,
+  type Territory,
+  type InsertTerritory,
+  type UpdateTerritory,
+  type AdjusterClaim,
+  type InsertAdjusterClaim,
+  type UpdateAdjusterClaim,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -120,6 +129,31 @@ export interface IStorage {
   createContract(contract: InsertContract): Promise<Contract>;
   updateContract(id: string, updates: UpdateContract): Promise<Contract | undefined>;
   deleteContract(id: string): Promise<void>;
+
+  // Adjuster operations
+  getAdjusters(): Promise<(Adjuster & { claimCount: number; territory: Territory | null })[]>;
+  getAdjuster(id: string): Promise<(Adjuster & { territory: Territory | null; claims: AdjusterClaim[] }) | undefined>;
+  createAdjuster(adjuster: InsertAdjuster): Promise<Adjuster>;
+  updateAdjuster(id: string, updates: UpdateAdjuster): Promise<Adjuster | undefined>;
+  deleteAdjuster(id: string): Promise<void>;
+
+  // Territory operations
+  getTerritories(): Promise<(Territory & { adjuster: Adjuster | null })[]>;
+  getTerritory(id: string): Promise<Territory | undefined>;
+  createTerritory(territory: InsertTerritory): Promise<Territory>;
+  updateTerritory(id: string, updates: UpdateTerritory): Promise<Territory | undefined>;
+  deleteTerritory(id: string): Promise<void>;
+
+  // Adjuster Claim operations
+  getAdjusterClaims(filters?: { status?: string; adjusterId?: string; county?: string; priority?: string }): Promise<(AdjusterClaim & { adjuster: Adjuster | null; territory: Territory | null })[]>;
+  getAdjusterClaim(id: string): Promise<AdjusterClaim | undefined>;
+  createAdjusterClaim(claim: InsertAdjusterClaim): Promise<AdjusterClaim>;
+  updateAdjusterClaim(id: string, updates: UpdateAdjusterClaim): Promise<AdjusterClaim | undefined>;
+  assignAdjusterClaim(claimId: string, adjusterId: string): Promise<AdjusterClaim | undefined>;
+  deleteAdjusterClaim(id: string): Promise<void>;
+
+  // Adjuster stats
+  getAdjusterStats(): Promise<{ adjusterId: string; adjusterName: string; territory: string | null; openClaims: number; maxCaseload: number; status: string }[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -138,6 +172,9 @@ export class MemStorage implements IStorage {
   private bookingCustomers: Map<string, Customer>;
   private bookings: Map<string, Booking>;
   private contracts: Map<string, Contract>;
+  private adjustersMap: Map<string, Adjuster>;
+  private territoriesMap: Map<string, Territory>;
+  private adjusterClaimsMap: Map<string, AdjusterClaim>;
 
   constructor() {
     this.quoteRequests = new Map();
@@ -155,6 +192,9 @@ export class MemStorage implements IStorage {
     this.bookingCustomers = new Map();
     this.bookings = new Map();
     this.contracts = new Map();
+    this.adjustersMap = new Map();
+    this.territoriesMap = new Map();
+    this.adjusterClaimsMap = new Map();
 
     // Initialize with sample products
     this.initializeSampleData();
@@ -975,6 +1015,211 @@ export class MemStorage implements IStorage {
 
   async deleteContract(id: string): Promise<void> {
     this.contracts.delete(id);
+  }
+
+  // ─── Adjuster operations ───────────────────────────────────────────────────
+
+  private readonly OPEN_STATUSES = ["unassigned","assigned","in_progress","inspection_scheduled","pending_estimate","pending_approval"];
+
+  async getAdjusters(): Promise<(Adjuster & { claimCount: number; territory: Territory | null })[]> {
+    return Array.from(this.adjustersMap.values())
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .map(adj => ({
+        ...adj,
+        claimCount: Array.from(this.adjusterClaimsMap.values())
+          .filter(c => c.adjusterId === adj.id && this.OPEN_STATUSES.includes(c.status)).length,
+        territory: Array.from(this.territoriesMap.values()).find(t => t.adjusterId === adj.id) ?? null,
+      }));
+  }
+
+  async getAdjuster(id: string): Promise<(Adjuster & { territory: Territory | null; claims: AdjusterClaim[] }) | undefined> {
+    const adj = this.adjustersMap.get(id);
+    if (!adj) return undefined;
+    return {
+      ...adj,
+      territory: Array.from(this.territoriesMap.values()).find(t => t.adjusterId === id) ?? null,
+      claims: Array.from(this.adjusterClaimsMap.values()).filter(c => c.adjusterId === id),
+    };
+  }
+
+  async createAdjuster(data: InsertAdjuster): Promise<Adjuster> {
+    const id = randomUUID();
+    const now = new Date();
+    const newAdj: Adjuster = {
+      ...data,
+      id,
+      status: data.status ?? "active",
+      certifications: (data.certifications ?? []) as string[],
+      maxCaseload: data.maxCaseload ?? 30,
+      notes: data.notes ?? null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.adjustersMap.set(id, newAdj);
+    return newAdj;
+  }
+
+  async updateAdjuster(id: string, updates: UpdateAdjuster): Promise<Adjuster | undefined> {
+    const existing = this.adjustersMap.get(id);
+    if (!existing) return undefined;
+    const updated: Adjuster = {
+      ...existing,
+      ...updates,
+      certifications: (updates.certifications ?? existing.certifications) as string[],
+      updatedAt: new Date(),
+    };
+    this.adjustersMap.set(id, updated);
+    return updated;
+  }
+
+  async deleteAdjuster(id: string): Promise<void> {
+    this.adjustersMap.delete(id);
+  }
+
+  // ─── Territory operations ──────────────────────────────────────────────────
+
+  async getTerritories(): Promise<(Territory & { adjuster: Adjuster | null })[]> {
+    return Array.from(this.territoriesMap.values())
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .map(t => ({
+        ...t,
+        adjuster: t.adjusterId ? (this.adjustersMap.get(t.adjusterId) ?? null) : null,
+      }));
+  }
+
+  async getTerritory(id: string): Promise<Territory | undefined> {
+    return this.territoriesMap.get(id);
+  }
+
+  async createTerritory(data: InsertTerritory): Promise<Territory> {
+    const id = randomUUID();
+    const now = new Date();
+    const newTerritory: Territory = {
+      ...data,
+      id,
+      counties: (data.counties ?? []) as string[],
+      zipCodes: (data.zipCodes ?? []) as string[],
+      adjusterId: data.adjusterId ?? null,
+      priority: data.priority ?? "standard",
+      notes: data.notes ?? null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.territoriesMap.set(id, newTerritory);
+    return newTerritory;
+  }
+
+  async updateTerritory(id: string, updates: UpdateTerritory): Promise<Territory | undefined> {
+    const existing = this.territoriesMap.get(id);
+    if (!existing) return undefined;
+    const updated: Territory = {
+      ...existing,
+      ...updates,
+      counties: (updates.counties ?? existing.counties) as string[],
+      zipCodes: (updates.zipCodes ?? existing.zipCodes) as string[],
+      updatedAt: new Date(),
+    };
+    this.territoriesMap.set(id, updated);
+    return updated;
+  }
+
+  async deleteTerritory(id: string): Promise<void> {
+    this.territoriesMap.delete(id);
+  }
+
+  // ─── Adjuster Claim operations ─────────────────────────────────────────────
+
+  async getAdjusterClaims(filters?: { status?: string; adjusterId?: string; county?: string; priority?: string }): Promise<(AdjusterClaim & { adjuster: Adjuster | null; territory: Territory | null })[]> {
+    let claims = Array.from(this.adjusterClaimsMap.values());
+    if (filters?.status) claims = claims.filter(c => c.status === filters.status);
+    if (filters?.adjusterId) claims = claims.filter(c => c.adjusterId === filters.adjusterId);
+    if (filters?.county) claims = claims.filter(c => c.county === filters.county);
+    if (filters?.priority) claims = claims.filter(c => c.priority === filters.priority);
+    return claims
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .map(c => ({
+        ...c,
+        adjuster: c.adjusterId ? (this.adjustersMap.get(c.adjusterId) ?? null) : null,
+        territory: c.territoryId ? (this.territoriesMap.get(c.territoryId) ?? null) : null,
+      }));
+  }
+
+  async getAdjusterClaim(id: string): Promise<AdjusterClaim | undefined> {
+    return this.adjusterClaimsMap.get(id);
+  }
+
+  async createAdjusterClaim(data: InsertAdjusterClaim): Promise<AdjusterClaim> {
+    const id = randomUUID();
+    const now = new Date();
+    const count = this.adjusterClaimsMap.size + 1;
+    const claimNumber = data.claimNumber ?? `CLM-${String(count).padStart(6, "0")}`;
+    const newClaim: AdjusterClaim = {
+      ...data,
+      id,
+      claimNumber,
+      adjusterId: data.adjusterId ?? null,
+      territoryId: data.territoryId ?? null,
+      zipCode: data.zipCode ?? null,
+      estimatedDamage: data.estimatedDamage ? String(data.estimatedDamage) : null,
+      assignedAt: data.assignedAt ? new Date(data.assignedAt as unknown as string) : null,
+      dueDate: data.dueDate ?? null,
+      notes: data.notes ?? null,
+      status: data.status ?? "unassigned",
+      priority: data.priority ?? "standard",
+      vehicleInfo: data.vehicleInfo as { make: string; model: string; year: number; vin?: string },
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.adjusterClaimsMap.set(id, newClaim);
+    return newClaim;
+  }
+
+  async updateAdjusterClaim(id: string, updates: UpdateAdjusterClaim): Promise<AdjusterClaim | undefined> {
+    const existing = this.adjusterClaimsMap.get(id);
+    if (!existing) return undefined;
+    const updated: AdjusterClaim = {
+      ...existing,
+      ...updates,
+      estimatedDamage: updates.estimatedDamage !== undefined ? String(updates.estimatedDamage) : existing.estimatedDamage,
+      vehicleInfo: (updates.vehicleInfo ?? existing.vehicleInfo) as { make: string; model: string; year: number; vin?: string },
+      updatedAt: new Date(),
+    };
+    this.adjusterClaimsMap.set(id, updated);
+    return updated;
+  }
+
+  async assignAdjusterClaim(claimId: string, adjusterId: string): Promise<AdjusterClaim | undefined> {
+    const claim = this.adjusterClaimsMap.get(claimId);
+    if (!claim) return undefined;
+    const updated: AdjusterClaim = {
+      ...claim,
+      adjusterId,
+      assignedAt: new Date(),
+      status: "assigned",
+      updatedAt: new Date(),
+    };
+    this.adjusterClaimsMap.set(claimId, updated);
+    return updated;
+  }
+
+  async deleteAdjusterClaim(id: string): Promise<void> {
+    this.adjusterClaimsMap.delete(id);
+  }
+
+  async getAdjusterStats(): Promise<{ adjusterId: string; adjusterName: string; territory: string | null; openClaims: number; maxCaseload: number; status: string }[]> {
+    return Array.from(this.adjustersMap.values()).map(adj => {
+      const territory = Array.from(this.territoriesMap.values()).find(t => t.adjusterId === adj.id);
+      const openClaims = Array.from(this.adjusterClaimsMap.values())
+        .filter(c => c.adjusterId === adj.id && this.OPEN_STATUSES.includes(c.status)).length;
+      return {
+        adjusterId: adj.id,
+        adjusterName: `${adj.firstName} ${adj.lastName}`,
+        territory: territory?.name ?? null,
+        openClaims,
+        maxCaseload: adj.maxCaseload,
+        status: adj.status,
+      };
+    });
   }
 }
 
