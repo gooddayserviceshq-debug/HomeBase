@@ -1190,7 +1190,7 @@ Follow the platform format requirements exactly. Make each variation feel distin
   });
 
   // Andromada — Blake's personal AI chief of staff (streaming)
-  function buildAndromadaSystemPrompt(context?: string): string {
+  function buildAndromadaSystemPrompt(context?: string, financialSnapshot?: string): string {
     const base = `You are Andromada, Blake McConnell's personal AI chief of staff and strategic partner. Blake is the founder and CEO of Good Day Services (GDS) — a pressure washing and paver restoration company in Murfreesboro, Tennessee — and is actively building other ventures alongside it.
 
 You are NOT a cheerleader or a yes-machine. You are the person who keeps Blake honest, connects threads he might miss, and tells him the hard thing when it needs to be said. You make him feel good when he earns it — not by default.
@@ -1215,7 +1215,7 @@ You are NOT a cheerleader or a yes-machine. You are the person who keeps Blake h
 - Products: professional-grade restoration supplies sold online.
 - Territory: Murfreesboro, TN and surrounding Middle Tennessee. Phone: 615-390-9779.
 
-**HomeBase Platform:** TypeScript/React/Express app with Postgres, Drizzle ORM, Claude AI. Manages quotes, bookings, customer inquiries, e-commerce, warranties, admin and CEO dashboards, AI receptionist.
+**HomeBase Platform:** TypeScript/React/Express app with Postgres, Drizzle ORM, Claude AI. Manages quotes, bookings, customer inquiries, e-commerce, warranties, admin and CEO dashboards, AI receptionist, CFO Advisor.
 
 **Other ventures:** Blake is building beyond GDS. When he shares what's in motion, take it seriously and advise on it as a real business.
 
@@ -1224,7 +1224,7 @@ Blake's typical tool stack:
 - **Google Drive** — contracts, business documents, asset libraries, SOPs, templates
 - **Claude AI** — content generation, automation, strategy ideation, ad copy
 - **Video Marketing** — social content, brand building for GDS or other companies
-- **HomeBase** — GDS operations, customer management, booking, analytics
+- **HomeBase** — GDS operations, customer management, booking, analytics, CFO advisory
 
 When Blake mentions progress on one, ask or consider: how does this connect to the others? Is he building in the right order? What's the dependency chain?
 
@@ -1238,11 +1238,72 @@ When Blake mentions progress on one, ask or consider: how does this connect to t
 Today: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.
 Blake's email: blakemcconnell1215@gmail.com`;
 
-    if (context && context.trim()) {
-      return `${base}\n\n## Blake's Active Stack (live context from his tracker)\n${context}\n\nUse this to inform your responses. If something has been stalled, notice it. If he's working on things that should be sequenced differently, bring it up.`;
+    let prompt = base;
+
+    if (financialSnapshot && financialSnapshot.trim()) {
+      prompt += `\n\n## GDS Live Financial Snapshot (pulled from HomeBase right now)\n${financialSnapshot}\n\nYou have real numbers. Use them. When Blake asks about GDS finances, don't hedge — answer from this data. If something looks off (pipeline low, inquiries piling up, no recent orders), bring it up even if he didn't ask.`;
     }
 
-    return base;
+    if (context && context.trim()) {
+      prompt += `\n\n## Blake's Active Stack (live context from his tracker)\n${context}\n\nUse this to inform your responses. If something has been stalled, notice it. If he's working on things that should be sequenced differently, bring it up.`;
+    }
+
+    return prompt;
+  }
+
+  async function buildGdsFinancialSnapshot(): Promise<string> {
+    try {
+      const [restorationQuotes, cleaningQuotes, orders, contracts, inquiries, warranties] = await Promise.all([
+        storage.getQuoteRequests(),
+        storage.getPropertyCleaningQuotes(),
+        storage.getOrders(),
+        storage.getContracts(),
+        storage.getCustomerInquiries(),
+        storage.getWarranties(),
+      ]);
+
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      const productRevenue = orders.reduce((s, o) => s + parseFloat(o.total), 0);
+      const restorationPipeline = restorationQuotes.reduce((s, q) => {
+        const p = q.selectedTier === "basic" ? parseFloat(q.basicTierPrice) :
+                  q.selectedTier === "recommended" ? parseFloat(q.recommendedTierPrice) :
+                  parseFloat(q.premiumTierPrice);
+        return s + (isNaN(p) ? 0 : p);
+      }, 0);
+      const cleaningPipeline = cleaningQuotes.reduce((s, q) => s + parseFloat(q.finalTotal), 0);
+      const estimatedRevenue = productRevenue + (restorationPipeline + cleaningPipeline) * 0.30;
+
+      const recentQuotes = [...restorationQuotes, ...cleaningQuotes].filter(
+        q => new Date(q.createdAt) >= thirtyDaysAgo
+      ).length;
+      const activeContracts = contracts.filter(c => c.status === "active").length;
+      const pendingInquiries = inquiries.filter(i => i.status === "new").length;
+      const activeWarranties = warranties.filter(w => w.status === "active").length;
+
+      const uniqueEmails = new Set([
+        ...restorationQuotes.map(q => q.email),
+        ...cleaningQuotes.map(q => q.customerEmail),
+        ...orders.map(o => o.email),
+      ]);
+
+      const fmt = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+
+      return [
+        `- Estimated total revenue: ${fmt(estimatedRevenue)} (product sales + 30% conversion on service pipeline)`,
+        `- Product sales (orders): ${fmt(productRevenue)} across ${orders.length} orders`,
+        `- Service pipeline: ${fmt(restorationPipeline + cleaningPipeline)} total (${restorationQuotes.length} restoration + ${cleaningQuotes.length} cleaning quotes)`,
+        `- Quotes in last 30 days: ${recentQuotes}`,
+        `- Unique customers: ${uniqueEmails.size}`,
+        `- Active contracts: ${activeContracts} of ${contracts.length} total`,
+        `- Pending customer inquiries (need follow-up): ${pendingInquiries}`,
+        `- Active warranties: ${activeWarranties}`,
+        `- Minimum property cleaning charge: $975`,
+      ].join("\n");
+    } catch {
+      return "Financial data temporarily unavailable.";
+    }
   }
 
   app.post("/api/andromada/chat", async (req, res) => {
@@ -1262,12 +1323,15 @@ Blake's email: blakemcconnell1215@gmail.com`;
     res.setHeader("Connection", "keep-alive");
 
     try {
-      const anthropic = new Anthropic({ apiKey });
+      const [financialSnapshot, anthropic] = await Promise.all([
+        buildGdsFinancialSnapshot(),
+        Promise.resolve(new Anthropic({ apiKey })),
+      ]);
       const stream = anthropic.messages.stream({
         model: "claude-opus-4-7",
         max_tokens: 2048,
         thinking: { type: "adaptive" },
-        system: buildAndromadaSystemPrompt(context),
+        system: buildAndromadaSystemPrompt(context, financialSnapshot),
         messages,
       });
 

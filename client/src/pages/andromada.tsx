@@ -9,7 +9,7 @@ import {
   Send, Sparkles, Lightbulb, Activity,
   Download, Copy, Trash2, Plus, X,
   TrendingUp, Users, FileText, BarChart2,
-  Zap, Target, RefreshCw, Layers,
+  Zap, Target, RefreshCw, Layers, BrainCircuit,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -74,6 +74,8 @@ const QUICK_PROMPTS = [
   "What should I finish before I start anything new?",
   "What's the video marketing play for GDS this month?",
   "Where is the biggest gap between what I'm doing and what moves the needle?",
+  "What does the GDS revenue look like right now and where's the gap?",
+  "How many quotes are sitting in the pipeline and are they converting?",
 ];
 
 // ── Sub-components ─────────────────────────────────────────────────────────
@@ -308,7 +310,13 @@ export default function Andromada() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {keyMetrics && (
+            <div className="flex items-center gap-1.5" title="GDS financial data is live in Andromada's context">
+              <BrainCircuit className="w-3.5 h-3.5 text-violet-400" />
+              <span className="text-violet-400/70 text-xs">CFO context live</span>
+            </div>
+          )}
           <div className="flex items-center gap-1.5">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-emerald-400 text-xs font-medium">Live</span>
@@ -561,12 +569,18 @@ export default function Andromada() {
               {keyMetrics ? (
                 <>
                   <StatCard icon={<TrendingUp className="w-4 h-4" />} label="Est. Revenue"       value={`$${Number(keyMetrics.totalRevenue).toFixed(0)}`}    color="emerald" />
-                  <StatCard icon={<FileText className="w-4 h-4" />}   label="Total Quotes"       value={keyMetrics.totalQuotes}                               color="blue" />
-                  <StatCard icon={<Users className="w-4 h-4" />}      label="Total Customers"    value={keyMetrics.totalCustomers}                            color="violet" />
+                  <StatCard icon={<FileText className="w-4 h-4" />}   label="Pipeline Quotes"    value={keyMetrics.totalQuotes}                               color="blue" />
+                  <StatCard icon={<BarChart2 className="w-4 h-4" />}  label="Avg Quote Value"    value={`$${Number(keyMetrics.avgQuoteValue).toFixed(0)}`}    color="pink" />
+                  <StatCard icon={<Users className="w-4 h-4" />}      label="Customers"          value={keyMetrics.totalCustomers}                            color="violet" />
+                  <StatCard icon={<Users className="w-4 h-4" />}      label="Repeat Rate"        value={`${keyMetrics.repeatCustomerRate}%`}                  color="emerald" />
                   <StatCard icon={<Target className="w-4 h-4" />}     label="Pending Inquiries"  value={keyMetrics.pendingInquiries}                          color="amber" urgent={keyMetrics.pendingInquiries > 0} />
                   <StatCard icon={<Zap className="w-4 h-4" />}        label="Active Warranties"  value={keyMetrics.activeWarranties}                          color="indigo" />
-                  <StatCard icon={<BarChart2 className="w-4 h-4" />}  label="Avg Quote Value"    value={`$${Number(keyMetrics.avgQuoteValue).toFixed(0)}`}    color="pink" />
-                  <StatCard icon={<Users className="w-4 h-4" />}      label="Repeat Rate"        value={`${keyMetrics.repeatCustomerRate}%`}                  color="emerald" />
+                  <div className="mt-1 pt-2 border-t border-violet-900/20">
+                    <a href="/cfo-dashboard" className="flex items-center gap-1.5 text-violet-400/60 text-[10px] hover:text-violet-300 transition-colors">
+                      <BrainCircuit className="w-3 h-3" />
+                      Open full CFO Advisor →
+                    </a>
+                  </div>
                 </>
               ) : (
                 <div className="text-violet-500/40 text-xs text-center py-10 space-y-2">
