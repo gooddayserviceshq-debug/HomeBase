@@ -327,6 +327,7 @@ export default function AdminContracts() {
       endDate: c.endDate ? format(new Date(c.endDate), "yyyy-MM-dd") : undefined,
       notes: c.notes ?? undefined,
       contractNumber: c.contractNumber,
+      status: c.status as any,
     });
 
     const win = window.open("", "_blank");
@@ -713,6 +714,7 @@ export default function AdminContracts() {
                 endDate: viewingContract.endDate ? format(new Date(viewingContract.endDate), "yyyy-MM-dd") : undefined,
                 notes: viewingContract.notes ?? undefined,
                 contractNumber: viewingContract.contractNumber,
+                status: viewingContract.status as any,
               })}
             </pre>
             <DialogFooter>

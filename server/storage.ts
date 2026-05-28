@@ -27,10 +27,48 @@ import {
   type InsertCustomer,
   type Booking,
   type InsertBooking,
+  type Expense,
+  type InsertExpense,
+  type TaxSummary,
+  type InsertTaxSummary,
+  type InventoryItem,
+  type InsertInventoryItem,
+  type JobPosting,
+  type InsertJobPosting,
+  type JobApplication,
+  type InsertJobApplication,
+  type SocialPost,
+  type InsertSocialPost,
+  type GbpReview,
+  type InsertGbpReview,
   type Contract,
   type InsertContract,
   type UpdateContract,
+  users as usersTable,
+  quoteRequests as quoteRequestsTable,
+  categories as categoriesTable,
+  products as productsTable,
+  cartItems as cartItemsTable,
+  orders as ordersTable,
+  orderItems as orderItemsTable,
+  warranties as warrantiesTable,
+  documents as documentsTable,
+  propertyCleaningQuotes as propertyCleaningQuotesTable,
+  customerInquiries as customerInquiriesTable,
+  services as servicesTable,
+  customers as customersTable,
+  bookings as bookingsTable,
+  expenses as expensesTable,
+  taxSummaries as taxSummariesTable,
+  inventoryItems as inventoryItemsTable,
+  jobPostings as jobPostingsTable,
+  jobApplications as jobApplicationsTable,
+  socialPosts as socialPostsTable,
+  gbpReviews as gbpReviewsTable,
+  contracts as contractsTable,
 } from "@shared/schema";
+import { eq, desc, asc } from "drizzle-orm";
+import { db } from "./db";
 import { randomUUID } from "crypto";
 
 // Referenced from Replit Auth blueprint: javascript_log_in_with_replit
@@ -114,6 +152,50 @@ export interface IStorage {
   createBooking(customerData: InsertCustomer, bookingData: Omit<InsertBooking, "customerId">): Promise<{ booking: Booking; bookingNumber: string }>;
   updateBookingStatus(id: string, status: string): Promise<Booking | undefined>;
 
+  // Expense operations
+  getExpenses(): Promise<Expense[]>;
+  getExpense(id: string): Promise<Expense | undefined>;
+  createExpense(expense: InsertExpense): Promise<Expense>;
+  updateExpense(id: string, expense: Partial<InsertExpense>): Promise<Expense | undefined>;
+  deleteExpense(id: string): Promise<void>;
+
+  // Tax Summary operations
+  getTaxSummaries(): Promise<TaxSummary[]>;
+  upsertTaxSummary(summary: InsertTaxSummary): Promise<TaxSummary>;
+
+  // Inventory operations
+  getInventoryItems(): Promise<InventoryItem[]>;
+  getInventoryItem(id: string): Promise<InventoryItem | undefined>;
+  createInventoryItem(item: InsertInventoryItem): Promise<InventoryItem>;
+  updateInventoryItem(id: string, item: Partial<InsertInventoryItem>): Promise<InventoryItem | undefined>;
+  updateInventoryQuantity(id: string, delta: number): Promise<InventoryItem | undefined>;
+  deleteInventoryItem(id: string): Promise<void>;
+
+  // Job Posting operations
+  getJobPostings(includeAll?: boolean): Promise<JobPosting[]>;
+  getJobPosting(id: string): Promise<JobPosting | undefined>;
+  createJobPosting(posting: InsertJobPosting): Promise<JobPosting>;
+  updateJobPosting(id: string, posting: Partial<InsertJobPosting>): Promise<JobPosting | undefined>;
+
+  // Job Application operations
+  getJobApplications(jobId?: string): Promise<JobApplication[]>;
+  getJobApplication(id: string): Promise<JobApplication | undefined>;
+  createJobApplication(application: InsertJobApplication): Promise<JobApplication>;
+  updateJobApplicationStatus(id: string, status: string, notes?: string): Promise<JobApplication | undefined>;
+
+  // Social Post operations
+  getSocialPosts(): Promise<SocialPost[]>;
+  getSocialPost(id: string): Promise<SocialPost | undefined>;
+  createSocialPost(post: InsertSocialPost): Promise<SocialPost>;
+  updateSocialPost(id: string, post: Partial<InsertSocialPost>): Promise<SocialPost | undefined>;
+  deleteSocialPost(id: string): Promise<void>;
+
+  // GBP Review operations
+  getGbpReviews(): Promise<GbpReview[]>;
+  getGbpReview(id: string): Promise<GbpReview | undefined>;
+  createGbpReview(review: InsertGbpReview): Promise<GbpReview>;
+  updateGbpReviewReply(id: string, replyText: string): Promise<GbpReview | undefined>;
+
   // Contract operations
   getContracts(): Promise<Contract[]>;
   getContract(id: string): Promise<Contract | undefined>;
@@ -137,6 +219,13 @@ export class MemStorage implements IStorage {
   private services: Map<string, Service>;
   private bookingCustomers: Map<string, Customer>;
   private bookings: Map<string, Booking>;
+  private expensesMap: Map<string, Expense>;
+  private taxSummariesMap: Map<string, TaxSummary>;
+  private inventoryItemsMap: Map<string, InventoryItem>;
+  private jobPostingsMap: Map<string, JobPosting>;
+  private jobApplicationsMap: Map<string, JobApplication>;
+  private socialPostsMap: Map<string, SocialPost>;
+  private gbpReviewsMap: Map<string, GbpReview>;
   private contracts: Map<string, Contract>;
 
   constructor() {
@@ -154,6 +243,13 @@ export class MemStorage implements IStorage {
     this.services = new Map();
     this.bookingCustomers = new Map();
     this.bookings = new Map();
+    this.expensesMap = new Map();
+    this.taxSummariesMap = new Map();
+    this.inventoryItemsMap = new Map();
+    this.jobPostingsMap = new Map();
+    this.jobApplicationsMap = new Map();
+    this.socialPostsMap = new Map();
+    this.gbpReviewsMap = new Map();
     this.contracts = new Map();
 
     // Initialize with sample products
@@ -885,6 +981,147 @@ export class MemStorage implements IStorage {
     return updated;
   }
 
+  // Expense operations
+  async getExpenses(): Promise<Expense[]> {
+    return Array.from(this.expensesMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }
+  async getExpense(id: string): Promise<Expense | undefined> { return this.expensesMap.get(id); }
+  async createExpense(expense: InsertExpense): Promise<Expense> {
+    const id = randomUUID();
+    const newExpense: Expense = { ...expense, id, description: expense.description ?? null, mileage: expense.mileage ?? null, taxDeductible: expense.taxDeductible ?? true, createdAt: new Date() };
+    this.expensesMap.set(id, newExpense);
+    return newExpense;
+  }
+  async updateExpense(id: string, expense: Partial<InsertExpense>): Promise<Expense | undefined> {
+    const existing = this.expensesMap.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...expense };
+    this.expensesMap.set(id, updated);
+    return updated;
+  }
+  async deleteExpense(id: string): Promise<void> { this.expensesMap.delete(id); }
+
+  // Tax Summary operations
+  async getTaxSummaries(): Promise<TaxSummary[]> {
+    return Array.from(this.taxSummariesMap.values()).sort((a, b) => b.year - a.year || b.quarter - a.quarter);
+  }
+  async upsertTaxSummary(summary: InsertTaxSummary): Promise<TaxSummary> {
+    const existing = Array.from(this.taxSummariesMap.values()).find(s => s.year === summary.year && s.quarter === summary.quarter);
+    const id = existing?.id ?? randomUUID();
+    const newSummary: TaxSummary = { ...summary, id, totalRevenue: summary.totalRevenue ?? "0", totalExpenses: summary.totalExpenses ?? "0", taxableIncome: summary.taxableIncome ?? "0", estimatedTax: summary.estimatedTax ?? "0", createdAt: existing?.createdAt ?? new Date() };
+    this.taxSummariesMap.set(id, newSummary);
+    return newSummary;
+  }
+
+  // Inventory operations
+  async getInventoryItems(): Promise<InventoryItem[]> {
+    return Array.from(this.inventoryItemsMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }
+  async getInventoryItem(id: string): Promise<InventoryItem | undefined> { return this.inventoryItemsMap.get(id); }
+  async createInventoryItem(item: InsertInventoryItem): Promise<InventoryItem> {
+    const id = randomUUID();
+    const newItem: InventoryItem = { ...item, id, vendor: item.vendor ?? null, notes: item.notes ?? null, quantityOnHand: item.quantityOnHand ?? "0", reorderPoint: item.reorderPoint ?? "0", costPerUnit: item.costPerUnit ?? "0", updatedAt: new Date() };
+    this.inventoryItemsMap.set(id, newItem);
+    return newItem;
+  }
+  async updateInventoryItem(id: string, item: Partial<InsertInventoryItem>): Promise<InventoryItem | undefined> {
+    const existing = this.inventoryItemsMap.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...item, updatedAt: new Date() };
+    this.inventoryItemsMap.set(id, updated);
+    return updated;
+  }
+  async updateInventoryQuantity(id: string, delta: number): Promise<InventoryItem | undefined> {
+    const existing = this.inventoryItemsMap.get(id);
+    if (!existing) return undefined;
+    const newQty = Math.max(0, parseFloat(existing.quantityOnHand) + delta);
+    const updated = { ...existing, quantityOnHand: newQty.toFixed(2), updatedAt: new Date() };
+    this.inventoryItemsMap.set(id, updated);
+    return updated;
+  }
+  async deleteInventoryItem(id: string): Promise<void> { this.inventoryItemsMap.delete(id); }
+
+  // Job Posting operations
+  async getJobPostings(includeAll = false): Promise<JobPosting[]> {
+    let postings = Array.from(this.jobPostingsMap.values());
+    if (!includeAll) postings = postings.filter(p => p.status === "open");
+    return postings.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+  async getJobPosting(id: string): Promise<JobPosting | undefined> { return this.jobPostingsMap.get(id); }
+  async createJobPosting(posting: InsertJobPosting): Promise<JobPosting> {
+    const id = randomUUID();
+    const newPosting: JobPosting = { ...posting, id, status: posting.status ?? "open", createdAt: new Date() };
+    this.jobPostingsMap.set(id, newPosting);
+    return newPosting;
+  }
+  async updateJobPosting(id: string, posting: Partial<InsertJobPosting>): Promise<JobPosting | undefined> {
+    const existing = this.jobPostingsMap.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...posting };
+    this.jobPostingsMap.set(id, updated);
+    return updated;
+  }
+
+  // Job Application operations
+  async getJobApplications(jobId?: string): Promise<JobApplication[]> {
+    let apps = Array.from(this.jobApplicationsMap.values());
+    if (jobId) apps = apps.filter(a => a.jobId === jobId);
+    return apps.sort((a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime());
+  }
+  async getJobApplication(id: string): Promise<JobApplication | undefined> { return this.jobApplicationsMap.get(id); }
+  async createJobApplication(application: InsertJobApplication): Promise<JobApplication> {
+    const id = randomUUID();
+    const newApp: JobApplication = { ...application, id, status: application.status ?? "new", notes: application.notes ?? null, appliedAt: new Date() };
+    this.jobApplicationsMap.set(id, newApp);
+    return newApp;
+  }
+  async updateJobApplicationStatus(id: string, status: string, notes?: string): Promise<JobApplication | undefined> {
+    const existing = this.jobApplicationsMap.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, status: status as JobApplication["status"], notes: notes ?? existing.notes };
+    this.jobApplicationsMap.set(id, updated);
+    return updated;
+  }
+
+  // Social Post operations
+  async getSocialPosts(): Promise<SocialPost[]> {
+    return Array.from(this.socialPostsMap.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+  async getSocialPost(id: string): Promise<SocialPost | undefined> { return this.socialPostsMap.get(id); }
+  async createSocialPost(post: InsertSocialPost): Promise<SocialPost> {
+    const id = randomUUID();
+    const newPost: SocialPost = { ...post, id, mediaUrl: post.mediaUrl ?? null, scheduledAt: post.scheduledAt ?? null, status: post.status ?? "draft", hashtags: (post.hashtags ?? null) as string[] | null, createdAt: new Date() };
+    this.socialPostsMap.set(id, newPost);
+    return newPost;
+  }
+  async updateSocialPost(id: string, post: Partial<InsertSocialPost>): Promise<SocialPost | undefined> {
+    const existing = this.socialPostsMap.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...post };
+    this.socialPostsMap.set(id, updated);
+    return updated;
+  }
+  async deleteSocialPost(id: string): Promise<void> { this.socialPostsMap.delete(id); }
+
+  // GBP Review operations
+  async getGbpReviews(): Promise<GbpReview[]> {
+    return Array.from(this.gbpReviewsMap.values()).sort((a, b) => new Date(b.reviewDate).getTime() - new Date(a.reviewDate).getTime());
+  }
+  async getGbpReview(id: string): Promise<GbpReview | undefined> { return this.gbpReviewsMap.get(id); }
+  async createGbpReview(review: InsertGbpReview): Promise<GbpReview> {
+    const id = randomUUID();
+    const newReview: GbpReview = { ...review, id, replied: review.replied ?? false, comment: review.comment ?? null, replyText: review.replyText ?? null, googleReviewId: review.googleReviewId ?? null };
+    this.gbpReviewsMap.set(id, newReview);
+    return newReview;
+  }
+  async updateGbpReviewReply(id: string, replyText: string): Promise<GbpReview | undefined> {
+    const existing = this.gbpReviewsMap.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, replied: true, replyText };
+    this.gbpReviewsMap.set(id, updated);
+    return updated;
+  }
+
   // Customer Inquiry operations
   async getCustomerInquiries(): Promise<CustomerInquiry[]> {
     const inquiries = Array.from(this.customerInquiries.values());
@@ -978,4 +1215,557 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// ── DatabaseStorage ──────────────────────────────────────────────────────────
+
+type DB = NonNullable<typeof db>;
+
+export class DatabaseStorage implements IStorage {
+  constructor(private db: DB) {}
+
+  // ── Seed helpers ────────────────────────────────────────────────────────────
+
+  async seed() {
+    // Only seed if services table is empty
+    const existing = await this.db.select().from(servicesTable).limit(1);
+    if (existing.length > 0) return;
+
+    console.log("[DB] Seeding initial data...");
+
+    // Categories
+    await this.db.insert(categoriesTable).values([
+      { id: "cat-sealers", name: "Sealers & Coatings", slug: "sealers-coatings", description: "Professional-grade sealers for lasting protection", displayOrder: 1 },
+      { id: "cat-cleaners", name: "Cleaners", slug: "cleaners", description: "Industrial-strength cleaning solutions", displayOrder: 2 },
+      { id: "cat-sand", name: "Polymeric Sand", slug: "polymeric-sand", description: "Premium joint sand for paver stability", displayOrder: 3 },
+      { id: "cat-tools", name: "Tools & Equipment", slug: "tools-equipment", description: "Professional tools for application", displayOrder: 4 },
+    ]).onConflictDoNothing();
+
+    // Products
+    await this.db.insert(productsTable).values([
+      { id: "prod-acrylic-sealer", categoryId: "cat-sealers", name: "GDS Premium Acrylic Sealer", slug: "gds-premium-acrylic-sealer", description: "Our signature acrylic sealer provides superior color enhancement and stain protection for all paver types.", shortDescription: "Premium water-based acrylic sealer with UV protection", price: "89.99", compareAtPrice: "119.99", sku: "GDS-AS-001", stockQuantity: 45, lowStockThreshold: 10, featured: true, active: true, specifications: { "Coverage": "150-200 sq ft per gallon", "Finish": "Wet-look gloss", "Dry Time": "2-4 hours" } },
+      { id: "prod-penetrating-sealer", categoryId: "cat-sealers", name: "GDS Penetrating Siloxane Sealer", slug: "gds-penetrating-siloxane-sealer", description: "Professional-grade penetrating sealer with siloxane/silane technology.", shortDescription: "Invisible penetrating sealer for maximum protection", price: "149.99", compareAtPrice: "189.99", sku: "GDS-PS-001", stockQuantity: 32, lowStockThreshold: 5, featured: true, active: true, specifications: { "Coverage": "100-150 sq ft per gallon", "Finish": "Natural/Invisible", "Protection": "5-7 years" } },
+      { id: "prod-power-clean", categoryId: "cat-cleaners", name: "GDS PowerClean Concentrate", slug: "gds-powerclean-concentrate", description: "Industrial-strength cleaner concentrate for removing oil stains, organic growth, and years of buildup.", shortDescription: "Concentrated cleaner for tough stains", price: "34.99", compareAtPrice: "44.99", sku: "GDS-PC-001", stockQuantity: 78, lowStockThreshold: 15, featured: false, active: true, specifications: { "Dilution": "1:10 for heavy cleaning", "pH Level": "12.5", "Biodegradable": "Yes" } },
+      { id: "prod-polymeric-sand", categoryId: "cat-sand", name: "GDS ProLock Polymeric Sand", slug: "gds-prolock-polymeric-sand", description: "Premium polymeric sand with advanced polymer technology.", shortDescription: "Advanced polymeric sand for joint stabilization", price: "28.99", compareAtPrice: "36.99", sku: "GDS-PP-001", stockQuantity: 124, lowStockThreshold: 20, featured: false, active: true, specifications: { "Bag Size": "50 lbs", "Coverage": "50-75 sq ft per bag", "Color": "Gray" } },
+      { id: "prod-app-kit", categoryId: "cat-tools", name: "GDS Professional Application Kit", slug: "gds-professional-application-kit", description: "Complete kit for professional sealer application.", shortDescription: "Complete sealer application kit", price: "89.99", compareAtPrice: "119.99", sku: "GDS-AK-001", stockQuantity: 18, lowStockThreshold: 5, featured: false, active: true, specifications: { "Roller Width": "18 inches", "Pole Length": "4-8 ft adjustable" } },
+    ]).onConflictDoNothing();
+
+    // Documents
+    await this.db.insert(documentsTable).values([
+      { id: "doc-maintenance", title: "Paver Maintenance Guide", slug: "paver-maintenance-guide", category: "guide", description: "Complete guide to maintaining your pavers after restoration", content: "Regular maintenance extends the life of your paver restoration. Clean annually, reapply sealer every 2-3 years.", public: true, displayOrder: 1 },
+      { id: "doc-warranty", title: "Standard Warranty Terms", slug: "standard-warranty-terms", category: "warranty", description: "Standard warranty terms for all GDS services", content: "Good Day Pressure Washing warrants all restoration work against defects in materials and workmanship.", public: true, displayOrder: 2 },
+    ]).onConflictDoNothing();
+
+    // Booking services
+    await this.db.insert(servicesTable).values([
+      { id: "svc-house-siding", name: "House Siding", description: "Professional soft wash cleaning for vinyl, wood, and fiber cement siding.", basePrice: "150.00", pricePerSqFt: "0.1000", active: true },
+      { id: "svc-driveway", name: "Driveway", description: "High-pressure cleaning for concrete, asphalt, and paver driveways.", basePrice: "100.00", pricePerSqFt: "0.1200", active: true },
+      { id: "svc-deck-patio", name: "Deck & Patio", description: "Thorough cleaning for wood decks, composite decking, and paver patios.", basePrice: "125.00", pricePerSqFt: "0.1500", active: true },
+      { id: "svc-roof-cleaning", name: "Roof Cleaning", description: "Safe soft wash treatment to remove algae, moss, and stains without damaging shingles.", basePrice: "200.00", pricePerSqFt: "0.2500", active: true },
+    ]).onConflictDoNothing();
+
+    console.log("[DB] Seed complete.");
+  }
+
+  // ── Users ────────────────────────────────────────────────────────────────────
+
+  async getUser(id: string): Promise<User | undefined> {
+    const rows = await this.db.select().from(usersTable).where(eq(usersTable.id, id));
+    return rows[0];
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const rows = await this.db.insert(usersTable).values({
+      ...userData,
+      updatedAt: new Date(),
+    }).onConflictDoUpdate({
+      target: usersTable.id,
+      set: { email: userData.email, firstName: userData.firstName, lastName: userData.lastName, profileImageUrl: userData.profileImageUrl, updatedAt: new Date() },
+    }).returning();
+    return rows[0];
+  }
+
+  // ── Quote Requests ───────────────────────────────────────────────────────────
+
+  async getQuoteRequests(): Promise<QuoteRequest[]> {
+    return this.db.select().from(quoteRequestsTable).orderBy(desc(quoteRequestsTable.createdAt));
+  }
+
+  async getQuoteRequest(id: string): Promise<QuoteRequest | undefined> {
+    const rows = await this.db.select().from(quoteRequestsTable).where(eq(quoteRequestsTable.id, id));
+    return rows[0];
+  }
+
+  async createQuoteRequest(insertData: InsertQuoteRequest, calc: { squareFootage: number; basicTierPrice: string; recommendedTierPrice: string; premiumTierPrice: string }): Promise<QuoteRequest> {
+    const rows = await this.db.insert(quoteRequestsTable).values({ ...insertData, ...calc }).returning();
+    return rows[0];
+  }
+
+  // ── Categories ───────────────────────────────────────────────────────────────
+
+  async getCategories(): Promise<Category[]> {
+    return this.db.select().from(categoriesTable).orderBy(asc(categoriesTable.displayOrder));
+  }
+
+  async getCategory(id: string): Promise<Category | undefined> {
+    const rows = await this.db.select().from(categoriesTable).where(eq(categoriesTable.id, id));
+    return rows[0];
+  }
+
+  async createCategory(category: InsertCategory): Promise<Category> {
+    const rows = await this.db.insert(categoriesTable).values(category).returning();
+    return rows[0];
+  }
+
+  // ── Products ─────────────────────────────────────────────────────────────────
+
+  async getProducts(categoryId?: string): Promise<Product[]> {
+    const q = this.db.select().from(productsTable).where(eq(productsTable.active, true));
+    if (categoryId) {
+      return this.db.select().from(productsTable).where(eq(productsTable.categoryId, categoryId));
+    }
+    return q;
+  }
+
+  async getProduct(id: string): Promise<Product | undefined> {
+    const rows = await this.db.select().from(productsTable).where(eq(productsTable.id, id));
+    return rows[0];
+  }
+
+  async getProductBySlug(slug: string): Promise<Product | undefined> {
+    const rows = await this.db.select().from(productsTable).where(eq(productsTable.slug, slug));
+    return rows[0];
+  }
+
+  async createProduct(product: InsertProduct): Promise<Product> {
+    const rows = await this.db.insert(productsTable).values(product as any).returning();
+    return rows[0];
+  }
+
+  async updateProduct(id: string, product: Partial<InsertProduct>): Promise<Product | undefined> {
+    const rows = await this.db.update(productsTable).set({ ...(product as any), updatedAt: new Date() }).where(eq(productsTable.id, id)).returning();
+    return rows[0];
+  }
+
+  async deleteProduct(id: string): Promise<void> {
+    await this.db.delete(productsTable).where(eq(productsTable.id, id));
+  }
+
+  // ── Cart ─────────────────────────────────────────────────────────────────────
+
+  async getCartItems(userId?: string, sessionId?: string): Promise<(CartItem & { product: Product })[]> {
+    const condition = userId
+      ? eq(cartItemsTable.userId, userId)
+      : eq(cartItemsTable.sessionId, sessionId!);
+    const rows = await this.db
+      .select({ cartItem: cartItemsTable, product: productsTable })
+      .from(cartItemsTable)
+      .innerJoin(productsTable, eq(cartItemsTable.productId, productsTable.id))
+      .where(condition);
+    return rows.map(r => ({ ...r.cartItem, product: r.product }));
+  }
+
+  async addToCart(item: InsertCartItem): Promise<CartItem> {
+    const rows = await this.db.insert(cartItemsTable).values(item).returning();
+    return rows[0];
+  }
+
+  async updateCartItemQuantity(id: string, quantity: number): Promise<CartItem | undefined> {
+    const rows = await this.db.update(cartItemsTable).set({ quantity, updatedAt: new Date() }).where(eq(cartItemsTable.id, id)).returning();
+    return rows[0];
+  }
+
+  async removeFromCart(id: string): Promise<void> {
+    await this.db.delete(cartItemsTable).where(eq(cartItemsTable.id, id));
+  }
+
+  async clearCart(userId?: string, sessionId?: string): Promise<void> {
+    const condition = userId
+      ? eq(cartItemsTable.userId, userId)
+      : eq(cartItemsTable.sessionId, sessionId!);
+    await this.db.delete(cartItemsTable).where(condition);
+  }
+
+  // ── Orders ───────────────────────────────────────────────────────────────────
+
+  async createOrder(order: InsertOrder, items: InsertOrderItem[]): Promise<Order> {
+    const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+    const rows = await this.db.insert(ordersTable).values({ ...order, orderNumber }).returning();
+    const newOrder = rows[0];
+    if (items.length > 0) {
+      await this.db.insert(orderItemsTable).values(items.map(i => ({ ...i, orderId: newOrder.id })));
+    }
+    return newOrder;
+  }
+
+  async getOrders(userId?: string): Promise<Order[]> {
+    if (userId) {
+      return this.db.select().from(ordersTable).where(eq(ordersTable.userId, userId)).orderBy(desc(ordersTable.createdAt));
+    }
+    return this.db.select().from(ordersTable).orderBy(desc(ordersTable.createdAt));
+  }
+
+  async getOrder(id: string): Promise<Order | undefined> {
+    const rows = await this.db.select().from(ordersTable).where(eq(ordersTable.id, id));
+    return rows[0];
+  }
+
+  async getOrderItems(orderId: string): Promise<OrderItem[]> {
+    return this.db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, orderId));
+  }
+
+  async updateOrderStatus(id: string, status: string): Promise<Order | undefined> {
+    const rows = await this.db.update(ordersTable).set({ status, updatedAt: new Date() }).where(eq(ordersTable.id, id)).returning();
+    return rows[0];
+  }
+
+  // ── Warranties ───────────────────────────────────────────────────────────────
+
+  async createWarranty(warranty: InsertWarranty): Promise<Warranty> {
+    const warrantyNumber = `WAR-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+    const rows = await this.db.insert(warrantiesTable).values({ ...warranty, warrantyNumber }).returning();
+    return rows[0];
+  }
+
+  async getWarranties(userId?: string): Promise<Warranty[]> {
+    if (userId) {
+      return this.db.select().from(warrantiesTable).where(eq(warrantiesTable.userId, userId)).orderBy(desc(warrantiesTable.createdAt));
+    }
+    return this.db.select().from(warrantiesTable).orderBy(desc(warrantiesTable.createdAt));
+  }
+
+  async getWarranty(id: string): Promise<Warranty | undefined> {
+    const rows = await this.db.select().from(warrantiesTable).where(eq(warrantiesTable.id, id));
+    return rows[0];
+  }
+
+  // ── Documents ────────────────────────────────────────────────────────────────
+
+  async getDocuments(category?: string): Promise<Document[]> {
+    if (category) {
+      return this.db.select().from(documentsTable).where(eq(documentsTable.category, category)).orderBy(asc(documentsTable.displayOrder));
+    }
+    return this.db.select().from(documentsTable).where(eq(documentsTable.public, true)).orderBy(asc(documentsTable.displayOrder));
+  }
+
+  async getDocument(id: string): Promise<Document | undefined> {
+    const rows = await this.db.select().from(documentsTable).where(eq(documentsTable.id, id));
+    return rows[0];
+  }
+
+  async createDocument(document: InsertDocument): Promise<Document> {
+    const rows = await this.db.insert(documentsTable).values(document).returning();
+    return rows[0];
+  }
+
+  // ── Property Cleaning Quotes ─────────────────────────────────────────────────
+
+  async getPropertyCleaningQuotes(): Promise<PropertyCleaningQuote[]> {
+    return this.db.select().from(propertyCleaningQuotesTable).orderBy(desc(propertyCleaningQuotesTable.createdAt));
+  }
+
+  async getPropertyCleaningQuote(id: string): Promise<PropertyCleaningQuote | undefined> {
+    const rows = await this.db.select().from(propertyCleaningQuotesTable).where(eq(propertyCleaningQuotesTable.id, id));
+    return rows[0];
+  }
+
+  async createPropertyCleaningQuote(quote: InsertPropertyCleaningQuote, calc: { itemizedTotal: string; minimumApplied: boolean; finalTotal: string }): Promise<PropertyCleaningQuote> {
+    const rows = await this.db.insert(propertyCleaningQuotesTable).values({ ...quote, ...calc }).returning();
+    return rows[0];
+  }
+
+  // ── Customer Inquiries ───────────────────────────────────────────────────────
+
+  async getCustomerInquiries(): Promise<CustomerInquiry[]> {
+    return this.db.select().from(customerInquiriesTable).orderBy(desc(customerInquiriesTable.createdAt));
+  }
+
+  async getCustomerInquiry(id: string): Promise<CustomerInquiry | undefined> {
+    const rows = await this.db.select().from(customerInquiriesTable).where(eq(customerInquiriesTable.id, id));
+    return rows[0];
+  }
+
+  async createCustomerInquiry(inquiry: InsertCustomerInquiry): Promise<CustomerInquiry> {
+    const rows = await this.db.insert(customerInquiriesTable).values({ ...inquiry, status: "new" }).returning();
+    return rows[0];
+  }
+
+  // ── Services ─────────────────────────────────────────────────────────────────
+
+  async getServices(): Promise<Service[]> {
+    return this.db.select().from(servicesTable).where(eq(servicesTable.active, true));
+  }
+
+  async getService(id: string): Promise<Service | undefined> {
+    const rows = await this.db.select().from(servicesTable).where(eq(servicesTable.id, id));
+    return rows[0];
+  }
+
+  // ── Customers ────────────────────────────────────────────────────────────────
+
+  async getCustomerByEmail(email: string): Promise<Customer | undefined> {
+    const rows = await this.db.select().from(customersTable).where(eq(customersTable.email, email));
+    return rows[0];
+  }
+
+  async createCustomer(customer: InsertCustomer): Promise<Customer> {
+    const rows = await this.db.insert(customersTable).values(customer).returning();
+    return rows[0];
+  }
+
+  // ── Bookings ─────────────────────────────────────────────────────────────────
+
+  async getBookings(): Promise<(Booking & { customer: Customer; service: Service })[]> {
+    const rows = await this.db
+      .select({ booking: bookingsTable, customer: customersTable, service: servicesTable })
+      .from(bookingsTable)
+      .innerJoin(customersTable, eq(bookingsTable.customerId, customersTable.id))
+      .innerJoin(servicesTable, eq(bookingsTable.serviceId, servicesTable.id))
+      .orderBy(desc(bookingsTable.createdAt));
+    return rows.map(r => ({ ...r.booking, customer: r.customer, service: r.service }));
+  }
+
+  async getBookingsByEmail(email: string): Promise<(Booking & { customer: Customer; service: Service })[]> {
+    const customer = await this.getCustomerByEmail(email);
+    if (!customer) return [];
+    const rows = await this.db
+      .select({ booking: bookingsTable, customer: customersTable, service: servicesTable })
+      .from(bookingsTable)
+      .innerJoin(customersTable, eq(bookingsTable.customerId, customersTable.id))
+      .innerJoin(servicesTable, eq(bookingsTable.serviceId, servicesTable.id))
+      .where(eq(bookingsTable.customerId, customer.id))
+      .orderBy(desc(bookingsTable.createdAt));
+    return rows.map(r => ({ ...r.booking, customer: r.customer, service: r.service }));
+  }
+
+  async createBooking(customerData: InsertCustomer, bookingData: Omit<InsertBooking, "customerId">): Promise<{ booking: Booking; bookingNumber: string }> {
+    let customer = await this.getCustomerByEmail(customerData.email);
+    if (!customer) {
+      customer = await this.createCustomer(customerData);
+    } else {
+      const updated = await this.db.update(customersTable).set({ ...customerData, updatedAt: new Date() }).where(eq(customersTable.id, customer.id)).returning();
+      customer = updated[0];
+    }
+    const bookingNumber = `BKG-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+    const rows = await this.db.insert(bookingsTable).values({ ...bookingData, customerId: customer.id, bookingNumber, status: bookingData.status ?? "scheduled" }).returning();
+    return { booking: rows[0], bookingNumber };
+  }
+
+  async updateBookingStatus(id: string, status: string): Promise<Booking | undefined> {
+    const rows = await this.db.update(bookingsTable).set({ status, updatedAt: new Date() }).where(eq(bookingsTable.id, id)).returning();
+    return rows[0];
+  }
+
+  // ── Expenses ─────────────────────────────────────────────────────────────────
+
+  async getExpenses(): Promise<Expense[]> {
+    return this.db.select().from(expensesTable).orderBy(desc(expensesTable.date));
+  }
+
+  async getExpense(id: string): Promise<Expense | undefined> {
+    const rows = await this.db.select().from(expensesTable).where(eq(expensesTable.id, id));
+    return rows[0];
+  }
+
+  async createExpense(expense: InsertExpense): Promise<Expense> {
+    const rows = await this.db.insert(expensesTable).values(expense).returning();
+    return rows[0];
+  }
+
+  async updateExpense(id: string, expense: Partial<InsertExpense>): Promise<Expense | undefined> {
+    const rows = await this.db.update(expensesTable).set(expense as any).where(eq(expensesTable.id, id)).returning();
+    return rows[0];
+  }
+
+  async deleteExpense(id: string): Promise<void> {
+    await this.db.delete(expensesTable).where(eq(expensesTable.id, id));
+  }
+
+  // ── Tax Summaries ─────────────────────────────────────────────────────────────
+
+  async getTaxSummaries(): Promise<TaxSummary[]> {
+    return this.db.select().from(taxSummariesTable).orderBy(desc(taxSummariesTable.year), desc(taxSummariesTable.quarter));
+  }
+
+  async upsertTaxSummary(summary: InsertTaxSummary): Promise<TaxSummary> {
+    const rows = await this.db.insert(taxSummariesTable).values(summary).onConflictDoNothing().returning();
+    if (rows.length > 0) return rows[0];
+    const existing = await this.db.select().from(taxSummariesTable)
+      .where(eq(taxSummariesTable.year, summary.year));
+    return existing[0];
+  }
+
+  // ── Inventory Items ───────────────────────────────────────────────────────────
+
+  async getInventoryItems(): Promise<InventoryItem[]> {
+    return this.db.select().from(inventoryItemsTable).orderBy(asc(inventoryItemsTable.name));
+  }
+
+  async getInventoryItem(id: string): Promise<InventoryItem | undefined> {
+    const rows = await this.db.select().from(inventoryItemsTable).where(eq(inventoryItemsTable.id, id));
+    return rows[0];
+  }
+
+  async createInventoryItem(item: InsertInventoryItem): Promise<InventoryItem> {
+    const rows = await this.db.insert(inventoryItemsTable).values(item).returning();
+    return rows[0];
+  }
+
+  async updateInventoryItem(id: string, item: Partial<InsertInventoryItem>): Promise<InventoryItem | undefined> {
+    const rows = await this.db.update(inventoryItemsTable).set({ ...(item as any), updatedAt: new Date() }).where(eq(inventoryItemsTable.id, id)).returning();
+    return rows[0];
+  }
+
+  async updateInventoryQuantity(id: string, delta: number): Promise<InventoryItem | undefined> {
+    const existing = await this.getInventoryItem(id);
+    if (!existing) return undefined;
+    const newQty = Math.max(0, parseFloat(existing.quantityOnHand) + delta);
+    const rows = await this.db.update(inventoryItemsTable).set({ quantityOnHand: newQty.toFixed(2), updatedAt: new Date() }).where(eq(inventoryItemsTable.id, id)).returning();
+    return rows[0];
+  }
+
+  async deleteInventoryItem(id: string): Promise<void> {
+    await this.db.delete(inventoryItemsTable).where(eq(inventoryItemsTable.id, id));
+  }
+
+  // ── Job Postings ──────────────────────────────────────────────────────────────
+
+  async getJobPostings(includeAll = false): Promise<JobPosting[]> {
+    if (includeAll) {
+      return this.db.select().from(jobPostingsTable).orderBy(desc(jobPostingsTable.createdAt));
+    }
+    return this.db.select().from(jobPostingsTable).where(eq(jobPostingsTable.status, "open")).orderBy(desc(jobPostingsTable.createdAt));
+  }
+
+  async getJobPosting(id: string): Promise<JobPosting | undefined> {
+    const rows = await this.db.select().from(jobPostingsTable).where(eq(jobPostingsTable.id, id));
+    return rows[0];
+  }
+
+  async createJobPosting(posting: InsertJobPosting): Promise<JobPosting> {
+    const rows = await this.db.insert(jobPostingsTable).values(posting).returning();
+    return rows[0];
+  }
+
+  async updateJobPosting(id: string, posting: Partial<InsertJobPosting>): Promise<JobPosting | undefined> {
+    const rows = await this.db.update(jobPostingsTable).set(posting as any).where(eq(jobPostingsTable.id, id)).returning();
+    return rows[0];
+  }
+
+  // ── Job Applications ──────────────────────────────────────────────────────────
+
+  async getJobApplications(jobId?: string): Promise<JobApplication[]> {
+    if (jobId) {
+      return this.db.select().from(jobApplicationsTable).where(eq(jobApplicationsTable.jobId, jobId)).orderBy(desc(jobApplicationsTable.appliedAt));
+    }
+    return this.db.select().from(jobApplicationsTable).orderBy(desc(jobApplicationsTable.appliedAt));
+  }
+
+  async getJobApplication(id: string): Promise<JobApplication | undefined> {
+    const rows = await this.db.select().from(jobApplicationsTable).where(eq(jobApplicationsTable.id, id));
+    return rows[0];
+  }
+
+  async createJobApplication(application: InsertJobApplication): Promise<JobApplication> {
+    const rows = await this.db.insert(jobApplicationsTable).values(application).returning();
+    return rows[0];
+  }
+
+  async updateJobApplicationStatus(id: string, status: string, notes?: string): Promise<JobApplication | undefined> {
+    const updateData: any = { status };
+    if (notes !== undefined) updateData.notes = notes;
+    const rows = await this.db.update(jobApplicationsTable).set(updateData).where(eq(jobApplicationsTable.id, id)).returning();
+    return rows[0];
+  }
+
+  // ── Social Posts ──────────────────────────────────────────────────────────────
+
+  async getSocialPosts(): Promise<SocialPost[]> {
+    return this.db.select().from(socialPostsTable).orderBy(desc(socialPostsTable.createdAt));
+  }
+
+  async getSocialPost(id: string): Promise<SocialPost | undefined> {
+    const rows = await this.db.select().from(socialPostsTable).where(eq(socialPostsTable.id, id));
+    return rows[0];
+  }
+
+  async createSocialPost(post: InsertSocialPost): Promise<SocialPost> {
+    const rows = await this.db.insert(socialPostsTable).values(post as any).returning();
+    return rows[0];
+  }
+
+  async updateSocialPost(id: string, post: Partial<InsertSocialPost>): Promise<SocialPost | undefined> {
+    const rows = await this.db.update(socialPostsTable).set(post as any).where(eq(socialPostsTable.id, id)).returning();
+    return rows[0];
+  }
+
+  async deleteSocialPost(id: string): Promise<void> {
+    await this.db.delete(socialPostsTable).where(eq(socialPostsTable.id, id));
+  }
+
+  // ── GBP Reviews ───────────────────────────────────────────────────────────────
+
+  async getGbpReviews(): Promise<GbpReview[]> {
+    return this.db.select().from(gbpReviewsTable).orderBy(desc(gbpReviewsTable.reviewDate));
+  }
+
+  async getGbpReview(id: string): Promise<GbpReview | undefined> {
+    const rows = await this.db.select().from(gbpReviewsTable).where(eq(gbpReviewsTable.id, id));
+    return rows[0];
+  }
+
+  async createGbpReview(review: InsertGbpReview): Promise<GbpReview> {
+    const rows = await this.db.insert(gbpReviewsTable).values(review).returning();
+    return rows[0];
+  }
+
+  async updateGbpReviewReply(id: string, replyText: string): Promise<GbpReview | undefined> {
+    const rows = await this.db.update(gbpReviewsTable).set({ replied: true, replyText }).where(eq(gbpReviewsTable.id, id)).returning();
+    return rows[0];
+  }
+
+  // ── Contracts ─────────────────────────────────────────────────────────────────
+
+  async getContracts(): Promise<Contract[]> {
+    return this.db.select().from(contractsTable).orderBy(desc(contractsTable.createdAt));
+  }
+
+  async getContract(id: string): Promise<Contract | undefined> {
+    const rows = await this.db.select().from(contractsTable).where(eq(contractsTable.id, id));
+    return rows[0];
+  }
+
+  async createContract(contract: InsertContract): Promise<Contract> {
+    const rows = await this.db.insert(contractsTable).values(contract as any).returning();
+    return rows[0];
+  }
+
+  async updateContract(id: string, updates: UpdateContract): Promise<Contract | undefined> {
+    const rows = await this.db.update(contractsTable).set({ ...updates as any, updatedAt: new Date() }).where(eq(contractsTable.id, id)).returning();
+    return rows[0];
+  }
+
+  async deleteContract(id: string): Promise<void> {
+    await this.db.delete(contractsTable).where(eq(contractsTable.id, id));
+  }
+}
+
+// ── Export ────────────────────────────────────────────────────────────────────
+
+async function initStorage(): Promise<IStorage> {
+  if (db) {
+    const store = new DatabaseStorage(db);
+    await store.seed();
+    return store;
+  }
+  return new MemStorage();
+}
+
+// Synchronous export for backwards compatibility — resolves on first use
+let _storage: IStorage = new MemStorage();
+initStorage().then(s => { _storage = s; }).catch(err => console.error("[storage] init error:", err));
+
+export const storage: IStorage = new Proxy({} as IStorage, {
+  get(_target, prop) {
+    return (_storage as any)[prop].bind(_storage);
+  },
+});
+

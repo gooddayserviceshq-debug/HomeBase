@@ -1099,8 +1099,12 @@ Follow the platform format requirements exactly. Make each variation feel distin
 
   // Booking system endpoints
   app.get("/api/services", async (req, res) => {
-    const services = await storage.getServices();
-    res.json(services);
+    try {
+      const services = await storage.getServices();
+      res.json(services);
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to fetch services" });
+    }
   });
 
   app.post("/api/quotes", async (req, res) => {
@@ -1176,8 +1180,12 @@ Follow the platform format requirements exactly. Make each variation feel distin
   });
 
   app.get("/api/admin/bookings", async (req, res) => {
-    const bookings = await storage.getBookings();
-    res.json(bookings);
+    try {
+      const bookings = await storage.getBookings();
+      res.json(bookings);
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to fetch bookings" });
+    }
   });
 
   app.patch("/api/admin/bookings/:id/status", async (req, res) => {
@@ -1331,6 +1339,437 @@ Blake's email: blakemcconnell1215@gmail.com`;
       res.write(
         `data: ${JSON.stringify({ error: error.message || "Request failed" })}\n\n`
       );
+    } finally {
+      res.end();
+    }
+  });
+
+  // ── Stripe Payment endpoints ─────────────────────────────────────────────────
+
+  app.post("/api/payments/create-intent", async (req, res) => {
+    try {
+      const { amount } = req.body;
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ error: "Valid amount is required" });
+      }
+      const stripeKey = process.env.STRIPE_SECRET_KEY;
+      if (!stripeKey) {
+        return res.status(503).json({ error: "Payment processing not configured" });
+      }
+      const Stripe = (await import("stripe")).default;
+      const stripe = new Stripe(stripeKey);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount * 100), // convert to cents
+        currency: "usd",
+        automatic_payment_methods: { enabled: true },
+      });
+      res.json({ clientSecret: paymentIntent.client_secret });
+    } catch (error: any) {
+      console.error("Stripe error:", error);
+      res.status(500).json({ error: error.message || "Failed to create payment intent" });
+    }
+  });
+
+  // ── Expense & Tax routes ──────────────────────────────────────────────────────
+
+  app.get("/api/admin/expenses", isAuthenticated, async (_req, res) => {
+    try {
+      const expenses = await storage.getExpenses();
+      res.json(expenses);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch expenses" });
+    }
+  });
+
+  app.post("/api/admin/expenses", isAuthenticated, async (req, res) => {
+    try {
+      const expenseSchema = z.object({
+        date: z.string().transform(s => new Date(s)),
+        category: z.enum(["fuel", "supplies", "equipment", "insurance", "marketing", "other"]),
+        vendor: z.string().min(1),
+        amount: z.string().regex(/^\d+\.?\d{0,2}$/),
+        description: z.string().optional(),
+        mileage: z.string().optional().nullable(),
+        taxDeductible: z.boolean().default(true),
+      });
+      const data = expenseSchema.parse(req.body);
+      const expense = await storage.createExpense(data as any);
+      res.json(expense);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: "Invalid expense data", details: error.errors });
+      res.status(500).json({ error: "Failed to create expense" });
+    }
+  });
+
+  app.put("/api/admin/expenses/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const expense = await storage.updateExpense(id, req.body);
+      if (!expense) return res.status(404).json({ error: "Expense not found" });
+      res.json(expense);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update expense" });
+    }
+  });
+
+  app.delete("/api/admin/expenses/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteExpense(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete expense" });
+    }
+  });
+
+  app.get("/api/admin/tax-summaries", isAuthenticated, async (_req, res) => {
+    try {
+      const summaries = await storage.getTaxSummaries();
+      res.json(summaries);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch tax summaries" });
+    }
+  });
+
+  // ── Inventory routes ──────────────────────────────────────────────────────────
+
+  app.get("/api/admin/inventory", isAuthenticated, async (_req, res) => {
+    try {
+      const items = await storage.getInventoryItems();
+      res.json(items);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch inventory" });
+    }
+  });
+
+  app.post("/api/admin/inventory", isAuthenticated, async (req, res) => {
+    try {
+      const itemSchema = z.object({
+        name: z.string().min(1),
+        category: z.string().min(1),
+        unit: z.string().min(1),
+        quantityOnHand: z.string().default("0"),
+        reorderPoint: z.string().default("0"),
+        costPerUnit: z.string().default("0"),
+        vendor: z.string().optional(),
+        notes: z.string().optional(),
+      });
+      const data = itemSchema.parse(req.body);
+      const item = await storage.createInventoryItem(data as any);
+      res.json(item);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: "Invalid item data", details: error.errors });
+      res.status(500).json({ error: "Failed to create inventory item" });
+    }
+  });
+
+  app.put("/api/admin/inventory/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const item = await storage.updateInventoryItem(id, req.body);
+      if (!item) return res.status(404).json({ error: "Item not found" });
+      res.json(item);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update inventory item" });
+    }
+  });
+
+  app.post("/api/admin/inventory/:id/adjust", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { delta } = req.body;
+      if (typeof delta !== "number") return res.status(400).json({ error: "delta must be a number" });
+      const item = await storage.updateInventoryQuantity(id, delta);
+      if (!item) return res.status(404).json({ error: "Item not found" });
+      res.json(item);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to adjust quantity" });
+    }
+  });
+
+  app.delete("/api/admin/inventory/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteInventoryItem(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete inventory item" });
+    }
+  });
+
+  // ── Hiring routes ─────────────────────────────────────────────────────────────
+
+  // Public: list open job postings
+  app.get("/api/jobs", async (_req, res) => {
+    try {
+      const postings = await storage.getJobPostings(false);
+      res.json(postings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch job postings" });
+    }
+  });
+
+  // Public: submit application
+  app.post("/api/jobs/:jobId/apply", async (req, res) => {
+    try {
+      const { jobId } = req.params;
+      const posting = await storage.getJobPosting(jobId);
+      if (!posting || posting.status !== "open") {
+        return res.status(404).json({ error: "Job posting not found or closed" });
+      }
+      const appSchema = z.object({
+        applicantName: z.string().min(2),
+        email: z.string().email(),
+        phone: z.string().min(10),
+        experience: z.string().min(10),
+        availability: z.string().min(2),
+      });
+      const data = appSchema.parse(req.body);
+      const application = await storage.createJobApplication({ ...data, jobId });
+
+      // Send confirmation email
+      try {
+        const { sendEmail } = await import("./sendEmail");
+        if (sendEmail && process.env.SENDGRID_API_KEY) {
+          await sendEmail({
+            to: data.email,
+            subject: "Application Received - Good Day Pressure Washing",
+            text: `Hi ${data.applicantName},\n\nThank you for applying for the ${posting.title} position at Good Day Pressure Washing. We've received your application and will be in touch soon.\n\nBest regards,\nGood Day Pressure Washing Team`,
+          });
+        }
+      } catch (emailError) {
+        console.error("Failed to send application confirmation email:", emailError);
+      }
+
+      res.json({ success: true, applicationId: application.id });
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: "Invalid application data", details: error.errors });
+      res.status(500).json({ error: "Failed to submit application" });
+    }
+  });
+
+  // Admin: all postings
+  app.get("/api/admin/jobs", isAuthenticated, async (_req, res) => {
+    try {
+      const postings = await storage.getJobPostings(true);
+      res.json(postings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch job postings" });
+    }
+  });
+
+  app.post("/api/admin/jobs", isAuthenticated, async (req, res) => {
+    try {
+      const postingSchema = z.object({
+        title: z.string().min(2),
+        description: z.string().min(10),
+        payRate: z.string().min(1),
+        status: z.enum(["open", "closed"]).default("open"),
+      });
+      const data = postingSchema.parse(req.body);
+      const posting = await storage.createJobPosting(data);
+      res.json(posting);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: "Invalid posting data", details: error.errors });
+      res.status(500).json({ error: "Failed to create job posting" });
+    }
+  });
+
+  app.patch("/api/admin/jobs/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const posting = await storage.updateJobPosting(id, req.body);
+      if (!posting) return res.status(404).json({ error: "Posting not found" });
+      res.json(posting);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update job posting" });
+    }
+  });
+
+  app.get("/api/admin/job-applications", isAuthenticated, async (req, res) => {
+    try {
+      const jobId = req.query.jobId as string | undefined;
+      const applications = await storage.getJobApplications(jobId);
+      res.json(applications);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch applications" });
+    }
+  });
+
+  app.patch("/api/admin/job-applications/:id/status", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status, notes } = req.body;
+      if (!status) return res.status(400).json({ error: "status is required" });
+      const application = await storage.updateJobApplicationStatus(id, status, notes);
+      if (!application) return res.status(404).json({ error: "Application not found" });
+      res.json(application);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update application status" });
+    }
+  });
+
+  // ── Social Media routes ───────────────────────────────────────────────────────
+
+  app.get("/api/admin/social-posts", isAuthenticated, async (_req, res) => {
+    try {
+      const posts = await storage.getSocialPosts();
+      res.json(posts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch social posts" });
+    }
+  });
+
+  app.post("/api/admin/social-posts", isAuthenticated, async (req, res) => {
+    try {
+      const postSchema = z.object({
+        platform: z.enum(["instagram", "tiktok", "google_business"]),
+        content: z.string().min(1),
+        mediaUrl: z.string().optional(),
+        scheduledAt: z.string().optional().transform(s => s ? new Date(s) : undefined),
+        status: z.enum(["draft", "scheduled", "posted"]).default("draft"),
+        hashtags: z.array(z.string()).optional(),
+      });
+      const data = postSchema.parse(req.body);
+      const post = await storage.createSocialPost(data as any);
+      res.json(post);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: "Invalid post data", details: error.errors });
+      res.status(500).json({ error: "Failed to create social post" });
+    }
+  });
+
+  app.put("/api/admin/social-posts/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const post = await storage.updateSocialPost(id, req.body);
+      if (!post) return res.status(404).json({ error: "Post not found" });
+      res.json(post);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update social post" });
+    }
+  });
+
+  app.delete("/api/admin/social-posts/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteSocialPost(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete social post" });
+    }
+  });
+
+  // AI post idea generation
+  app.post("/api/admin/social-posts/generate-ideas", isAuthenticated, async (req, res) => {
+    const { platform, service } = req.body;
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) return res.status(503).json({ error: "AI not configured" });
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+
+    try {
+      const anthropic = new Anthropic({ apiKey });
+      const stream = anthropic.messages.stream({
+        model: "claude-opus-4-7",
+        max_tokens: 800,
+        thinking: { type: "adaptive" },
+        messages: [{
+          role: "user",
+          content: `Generate 3 engaging social media post ideas for Good Day Pressure Washing (Murfreesboro, TN) on ${platform || "Instagram"}. ${service ? `Focus on: ${service}.` : ""} Each idea should include caption text and 5 relevant hashtags. Format as numbered list.`,
+        }],
+      });
+
+      for await (const event of stream) {
+        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+          res.write(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`);
+        }
+      }
+      res.write("data: [DONE]\n\n");
+    } catch (error: any) {
+      res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+    } finally {
+      res.end();
+    }
+  });
+
+  // ── GBP Review routes ─────────────────────────────────────────────────────────
+
+  app.get("/api/admin/reviews", isAuthenticated, async (_req, res) => {
+    try {
+      const reviews = await storage.getGbpReviews();
+      res.json(reviews);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch reviews" });
+    }
+  });
+
+  app.post("/api/admin/reviews", isAuthenticated, async (req, res) => {
+    try {
+      const reviewSchema = z.object({
+        reviewerName: z.string().min(1),
+        rating: z.number().min(1).max(5),
+        comment: z.string().optional(),
+        reviewDate: z.string().transform(s => new Date(s)),
+        googleReviewId: z.string().optional(),
+      });
+      const data = reviewSchema.parse(req.body);
+      const review = await storage.createGbpReview({ ...data, replied: false } as any);
+      res.json(review);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: "Invalid review data", details: error.errors });
+      res.status(500).json({ error: "Failed to create review" });
+    }
+  });
+
+  app.post("/api/admin/reviews/:id/reply", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { replyText } = req.body;
+      if (!replyText) return res.status(400).json({ error: "replyText is required" });
+      const review = await storage.updateGbpReviewReply(id, replyText);
+      if (!review) return res.status(404).json({ error: "Review not found" });
+      res.json(review);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save reply" });
+    }
+  });
+
+  // AI reply suggestion for review
+  app.post("/api/admin/reviews/:id/suggest-reply", isAuthenticated, async (req, res) => {
+    const { id } = req.params;
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) return res.status(503).json({ error: "AI not configured" });
+
+    const review = await storage.getGbpReview(id);
+    if (!review) return res.status(404).json({ error: "Review not found" });
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+
+    try {
+      const anthropic = new Anthropic({ apiKey });
+      const stream = anthropic.messages.stream({
+        model: "claude-opus-4-7",
+        max_tokens: 300,
+        thinking: { type: "adaptive" },
+        messages: [{
+          role: "user",
+          content: `Write a professional, friendly Google Business Profile reply for this ${review.rating}-star review for Good Day Pressure Washing (Murfreesboro, TN). Keep it under 150 words. Be warm, thank them by first name if mentioned, address the feedback specifically.\n\nReviewer: ${review.reviewerName}\nRating: ${review.rating}/5\nComment: ${review.comment || "(no comment)"}`,
+        }],
+      });
+
+      for await (const event of stream) {
+        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+          res.write(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`);
+        }
+      }
+      res.write("data: [DONE]\n\n");
+    } catch (error: any) {
+      res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
     } finally {
       res.end();
     }

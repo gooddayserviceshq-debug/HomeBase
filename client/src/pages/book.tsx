@@ -86,6 +86,13 @@ export default function Book() {
     onSuccess: (data) => {
       setQuote(data);
     },
+    onError: () => {
+      toast({
+        title: "Quote Failed",
+        description: "Could not calculate a quote. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const createBookingMutation = useMutation({
@@ -100,6 +107,13 @@ export default function Book() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
       setLocation("/my-appointments");
+    },
+    onError: () => {
+      toast({
+        title: "Booking Failed",
+        description: "Could not complete your booking. Please try again or call 615-390-9779.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -331,10 +345,10 @@ export default function Book() {
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <Tabs defaultValue="map" className="w-full">
+                  <Tabs defaultValue="manual" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="map" data-testid="tab-map-measurement">Map Measurement</TabsTrigger>
                       <TabsTrigger value="manual" data-testid="tab-manual-entry">Manual Entry</TabsTrigger>
+                      <TabsTrigger value="map" data-testid="tab-map-measurement">Map Measurement</TabsTrigger>
                     </TabsList>
                     
                     <TabsContent value="map" className="space-y-4">
@@ -347,8 +361,27 @@ export default function Book() {
                     </TabsContent>
                     
                     <TabsContent value="manual" className="space-y-4">
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { label: "Small (1,000 sq ft)", value: 1000 },
+                          { label: "Medium (2,000 sq ft)", value: 2000 },
+                          { label: "Large (3,500 sq ft)", value: 3500 },
+                          { label: "Extra Large (5,000 sq ft)", value: 5000 },
+                        ].map((est) => (
+                          <Button
+                            key={est.value}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => form.setValue("squareFootage", est.value)}
+                            className="justify-start text-xs"
+                          >
+                            {est.label}
+                          </Button>
+                        ))}
+                      </div>
                       <div>
-                        <Label htmlFor="squareFootage">Square Footage</Label>
+                        <Label htmlFor="squareFootage">Or enter exact square footage</Label>
                         <Input
                           id="squareFootage"
                           type="number"
@@ -430,7 +463,7 @@ export default function Book() {
                     mode="single"
                     selected={selectedDate}
                     onSelect={setSelectedDate}
-                    disabled={(date) => date < new Date() || date.getDay() === 0}
+                    disabled={(date) => { const today = new Date(); today.setHours(0,0,0,0); return date < today || date.getDay() === 0; }}
                     className="rounded-md border"
                     data-testid="calendar-booking"
                   />

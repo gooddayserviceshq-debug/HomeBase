@@ -130,7 +130,7 @@ export default function CFODashboard() {
         message,
         conversationHistory: apiHistory,
       });
-      return (res as { reply: string }).reply;
+      return ((await (res as unknown as Response).json()) as { reply: string }).reply;
     },
     onSuccess: (reply) => {
       setChatHistory(prev => [...prev, { role: "assistant", content: reply }]);

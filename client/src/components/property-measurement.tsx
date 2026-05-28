@@ -25,20 +25,29 @@ export function PropertyMeasurement({ onAreaCalculated, initialAddress = "" }: P
   const [area, setArea] = useState<number>(0);
   const [address, setAddress] = useState(initialAddress);
   const [isLoading, setIsLoading] = useState(true);
+  const [mapError, setMapError] = useState(false);
+
+  const MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
   useEffect(() => {
+    if (!MAPS_API_KEY) {
+      setIsLoading(false);
+      setMapError(true);
+      return;
+    }
+
     const initMap = async () => {
       // Load Google Maps script dynamically
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=drawing,geometry,places&v=weekly`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_API_KEY}&libraries=drawing,geometry,places&v=weekly`;
       script.async = true;
       script.defer = true;
-      
+
       script.onload = () => {
         if (mapRef.current && (window as any).google) {
           const google = (window as any).google;
           const mapInstance = new google.maps.Map(mapRef.current, {
-            center: { lat: 40.7128, lng: -74.0060 }, // Default to NYC
+            center: { lat: 35.8456, lng: -86.3903 }, // Murfreesboro, TN
             zoom: 18,
             mapTypeId: "satellite",
             tilt: 0,
@@ -52,6 +61,11 @@ export function PropertyMeasurement({ onAreaCalculated, initialAddress = "" }: P
             geocodeAddress(initialAddress, mapInstance);
           }
         }
+      };
+
+      script.onerror = () => {
+        setIsLoading(false);
+        setMapError(true);
       };
 
       document.head.appendChild(script);
@@ -211,15 +225,24 @@ export function PropertyMeasurement({ onAreaCalculated, initialAddress = "" }: P
         </p>
       </div>
 
-      <div
-        ref={mapRef}
-        className="w-full h-[400px] rounded-md border"
-        data-testid="google-map-container"
-      />
-
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/50">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      {mapError ? (
+        <div className="w-full h-[200px] rounded-md border flex flex-col items-center justify-center gap-2 bg-muted/30 text-muted-foreground" data-testid="google-map-container">
+          <MapPin className="h-8 w-8 opacity-40" />
+          <p className="text-sm font-medium">Map unavailable</p>
+          <p className="text-xs">Use the quick estimates or manual entry tab to enter square footage.</p>
+        </div>
+      ) : (
+        <div className="relative">
+          <div
+            ref={mapRef}
+            className="w-full h-[400px] rounded-md border"
+            data-testid="google-map-container"
+          />
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded-md">
+              <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+            </div>
+          )}
         </div>
       )}
 
