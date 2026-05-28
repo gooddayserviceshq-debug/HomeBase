@@ -1390,6 +1390,245 @@ Blake's email: blakemcconnell1215@gmail.com`;
     }
   });
 
+  // CFO Advisor endpoints
+  app.get("/api/cfo/analysis", isAuthenticated, async (_req, res) => {
+    try {
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) return res.status(500).json({ message: "AI service not configured" });
+
+      const [
+        restorationQuotes,
+        cleaningQuotes,
+        orders,
+        warranties,
+        inquiries,
+        products,
+        contracts,
+      ] = await Promise.all([
+        storage.getQuoteRequests(),
+        storage.getPropertyCleaningQuotes(),
+        storage.getOrders(),
+        storage.getWarranties(),
+        storage.getCustomerInquiries(),
+        storage.getProducts(),
+        storage.getContracts(),
+      ]);
+
+      // --- Financial metric calculations ---
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+      const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+
+      const productRevenue = orders.reduce((s, o) => s + parseFloat(o.total), 0);
+      const contractRevenue = contracts
+        .filter(c => c.status === "active" || c.status === "signed")
+        .reduce((s, c) => s + (parseFloat(c.rate) || 0), 0);
+
+      const restorationPipeline = restorationQuotes.reduce((s, q) => {
+        const p = q.selectedTier === "basic" ? parseFloat(q.basicTierPrice) :
+                  q.selectedTier === "recommended" ? parseFloat(q.recommendedTierPrice) :
+                  parseFloat(q.premiumTierPrice);
+        return s + (isNaN(p) ? 0 : p);
+      }, 0);
+      const cleaningPipeline = cleaningQuotes.reduce((s, q) => s + parseFloat(q.finalTotal), 0);
+
+      const estimatedServiceRevenue = (restorationPipeline + cleaningPipeline) * 0.30;
+      const totalEstimatedRevenue = productRevenue + estimatedServiceRevenue + contractRevenue;
+
+      const recentOrders = orders.filter(o => new Date(o.createdAt) >= thirtyDaysAgo);
+      const prevOrders = orders.filter(o => {
+        const d = new Date(o.createdAt);
+        return d >= sixtyDaysAgo && d < thirtyDaysAgo;
+      });
+      const recentOrderRevenue = recentOrders.reduce((s, o) => s + parseFloat(o.total), 0);
+      const prevOrderRevenue = prevOrders.reduce((s, o) => s + parseFloat(o.total), 0);
+      const revenueGrowth = prevOrderRevenue > 0
+        ? ((recentOrderRevenue - prevOrderRevenue) / prevOrderRevenue * 100).toFixed(1)
+        : "N/A";
+
+      const recentQuotes = [...restorationQuotes, ...cleaningQuotes].filter(
+        q => new Date(q.createdAt) >= thirtyDaysAgo
+      );
+      const prevQuotes = [...restorationQuotes, ...cleaningQuotes].filter(q => {
+        const d = new Date(q.createdAt);
+        return d >= sixtyDaysAgo && d < thirtyDaysAgo;
+      });
+
+      const tierBreakdown = { basic: 0, recommended: 0, premium: 0 };
+      restorationQuotes.forEach(q => {
+        if (q.selectedTier && tierBreakdown[q.selectedTier as keyof typeof tierBreakdown] !== undefined) {
+          tierBreakdown[q.selectedTier as keyof typeof tierBreakdown]++;
+        }
+      });
+
+      const avgOrderValue = orders.length > 0 ? productRevenue / orders.length : 0;
+      const avgRestorationValue = restorationQuotes.length > 0
+        ? restorationPipeline / restorationQuotes.length : 0;
+      const avgCleaningValue = cleaningQuotes.length > 0
+        ? cleaningPipeline / cleaningQuotes.length : 0;
+
+      const uniqueEmails = new Set([
+        ...restorationQuotes.map(q => q.email),
+        ...cleaningQuotes.map(q => q.customerEmail),
+        ...orders.map(o => o.email),
+      ]);
+
+      const activeContracts = contracts.filter(c => c.status === "active");
+      const lowStockProducts = products.filter(
+        p => p.stockQuantity !== null && p.stockQuantity <= (p.lowStockThreshold ?? 5)
+      );
+      const activeWarranties = warranties.filter(w => w.status === "active");
+      const pendingInquiries = inquiries.filter(i => i.status === "new");
+
+      // Monthly revenue for trend (last 6 months)
+      const monthlyRevenue: Record<string, number> = {};
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        monthlyRevenue[d.toISOString().slice(0, 7)] = 0;
+      }
+      orders.forEach(o => {
+        const month = new Date(o.createdAt).toISOString().slice(0, 7);
+        if (month in monthlyRevenue) monthlyRevenue[month] += parseFloat(o.total);
+      });
+
+      const financialSummary = {
+        revenue: {
+          totalEstimated: totalEstimatedRevenue,
+          productRevenue,
+          estimatedServiceRevenue,
+          contractRevenue,
+          recentMonthRevenue: recentOrderRevenue,
+          prevMonthRevenue: prevOrderRevenue,
+          revenueGrowthPct: revenueGrowth,
+          monthlyTrend: Object.entries(monthlyRevenue).map(([month, amount]) => ({ month, amount })),
+        },
+        pipeline: {
+          totalQuotes: restorationQuotes.length + cleaningQuotes.length,
+          restorationQuotes: restorationQuotes.length,
+          cleaningQuotes: cleaningQuotes.length,
+          pipelineValue: restorationPipeline + cleaningPipeline,
+          recentQuotes30d: recentQuotes.length,
+          prevQuotes30d: prevQuotes.length,
+          avgRestorationValue,
+          avgCleaningValue,
+          tierBreakdown,
+          estimatedConversionRate: 30,
+        },
+        customers: {
+          totalUnique: uniqueEmails.size,
+          pendingInquiries: pendingInquiries.length,
+        },
+        contracts: {
+          total: contracts.length,
+          active: activeContracts.length,
+          draft: contracts.filter(c => c.status === "draft").length,
+          totalContractValue: contractRevenue,
+        },
+        products: {
+          totalProducts: products.length,
+          totalOrders: orders.length,
+          avgOrderValue,
+          lowStockCount: lowStockProducts.length,
+        },
+        warranties: {
+          active: activeWarranties.length,
+          expired: warranties.filter(w => w.status === "expired").length,
+          claimed: warranties.filter(w => w.status === "claimed").length,
+        },
+        minimumJobSize: 975,
+      };
+
+      // Call Claude for CFO analysis
+      const anthropic = new Anthropic({ apiKey });
+      const message = await anthropic.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 2000,
+        system: `You are the virtual CFO for Good Day Services (Good Day Pressure Washing), a pressure washing and property cleaning company in Murfreesboro, Tennessee. You provide concise, actionable financial advice based on real business data. Format your response as JSON with exactly these keys: { "headline": string, "healthScore": number (0-100), "revenueInsight": string, "pricingInsight": string, "growthOpportunity": string, "riskAlert": string, "topRecommendations": string[] (3-5 items), "cashFlowNote": string }. Keep each field to 1-2 sentences. Be direct and specific with numbers from the data.`,
+        messages: [
+          {
+            role: "user",
+            content: `Analyze this Good Day Services financial data and provide CFO-level insights:\n\n${JSON.stringify(financialSummary, null, 2)}`,
+          },
+        ],
+      });
+
+      const rawText = message.content[0].type === "text" ? message.content[0].text : "{}";
+      let aiAnalysis: Record<string, unknown> = {};
+      try {
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        aiAnalysis = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+      } catch {
+        aiAnalysis = { headline: "Analysis unavailable", healthScore: 0 };
+      }
+
+      res.json({ financialSummary, aiAnalysis });
+    } catch (error) {
+      console.error("CFO Analysis Error:", error);
+      res.status(500).json({ message: "Failed to generate CFO analysis" });
+    }
+  });
+
+  app.post("/api/cfo/chat", isAuthenticated, async (req: any, res) => {
+    try {
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) return res.status(500).json({ message: "AI service not configured" });
+
+      const { message, conversationHistory } = req.body;
+      if (!message || typeof message !== "string") {
+        return res.status(400).json({ message: "Message is required" });
+      }
+
+      const [restorationQuotes, cleaningQuotes, orders, contracts, products] = await Promise.all([
+        storage.getQuoteRequests(),
+        storage.getPropertyCleaningQuotes(),
+        storage.getOrders(),
+        storage.getContracts(),
+        storage.getProducts(),
+      ]);
+
+      const productRevenue = orders.reduce((s, o) => s + parseFloat(o.total), 0);
+      const restorationPipeline = restorationQuotes.reduce((s, q) => {
+        const p = q.selectedTier === "basic" ? parseFloat(q.basicTierPrice) :
+                  q.selectedTier === "recommended" ? parseFloat(q.recommendedTierPrice) :
+                  parseFloat(q.premiumTierPrice);
+        return s + (isNaN(p) ? 0 : p);
+      }, 0);
+      const cleaningPipeline = cleaningQuotes.reduce((s, q) => s + parseFloat(q.finalTotal), 0);
+
+      const contextSnapshot = {
+        totalProductRevenue: productRevenue,
+        restorationPipeline,
+        cleaningPipeline,
+        estimatedRevenue: productRevenue + (restorationPipeline + cleaningPipeline) * 0.30,
+        totalQuotes: restorationQuotes.length + cleaningQuotes.length,
+        totalOrders: orders.length,
+        activeContracts: contracts.filter(c => c.status === "active").length,
+        totalProducts: products.length,
+        minimumJobSize: 975,
+      };
+
+      const anthropic = new Anthropic({ apiKey });
+      const history = Array.isArray(conversationHistory) ? conversationHistory.slice(-10) : [];
+
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 600,
+        system: `You are the virtual CFO for Good Day Services, a pressure washing and property cleaning company in Murfreesboro, Tennessee. You have access to their live business data (snapshot below). Provide concise, expert financial guidance. Answer in 2-4 sentences unless detail is needed. Current business snapshot: ${JSON.stringify(contextSnapshot)}`,
+        messages: [
+          ...history,
+          { role: "user", content: message },
+        ],
+      });
+
+      const reply = response.content[0].type === "text" ? response.content[0].text : "I couldn't generate a response.";
+      res.json({ reply });
+    } catch (error) {
+      console.error("CFO Chat Error:", error);
+      res.status(500).json({ message: "Failed to process CFO chat message" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
