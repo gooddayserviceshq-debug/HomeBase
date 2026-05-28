@@ -54,92 +54,20 @@ GDS also sells professional-grade restoration and cleaning products through our 
 - If asked about pricing, give ballpark ranges but encourage them to use the online quote tool for an accurate estimate
 - Do not make up services or prices not listed above
 - If a question is outside your knowledge, offer to connect them with the team via /contact`;
-import { 
+import {
   quoteCalculationSchema,
   insertQuoteRequestSchema,
   propertyCleaningCalculationSchema,
   cleaningServicePrices,
   type QuoteResponse,
-  type QuoteTiers,
   insertProductSchema,
 } from "@shared/schema";
-
-const BASE_RATES = {
-  interlocking_pavers: 0.35,
-  poured_concrete: 0.25,
-  stamped_concrete: 0.30,
-  brick_pavers: 0.40,
-};
-
-const CONDITION_MULTIPLIERS = {
-  lightly_dirty: 1.0,
-  heavily_soiled: 1.25,
-  stained_damaged: 1.5,
-};
-
-const SEALER_RATES = {
-  acrylic: 0.75,
-  penetrating: 1.25,
-};
-
-const POLYMERIC_SAND_COST_PER_SQ_FT = 0.50;
-
-function calculateQuoteTiers(
-  squareFootage: number,
-  surfaceType: keyof typeof BASE_RATES,
-  condition: keyof typeof CONDITION_MULTIPLIERS,
-  includePolymericSand: boolean
-): QuoteTiers {
-  const baseRate = BASE_RATES[surfaceType];
-  const conditionMultiplier = CONDITION_MULTIPLIERS[condition];
-  
-  const cleaningCost = squareFootage * baseRate * conditionMultiplier;
-  
-  const basicPrice = cleaningCost + (squareFootage * SEALER_RATES.acrylic);
-  
-  const sandCost = includePolymericSand ? squareFootage * POLYMERIC_SAND_COST_PER_SQ_FT : 0;
-  const recommendedPrice = cleaningCost + sandCost + (squareFootage * SEALER_RATES.acrylic);
-  
-  const premiumPrice = cleaningCost + sandCost + (squareFootage * SEALER_RATES.penetrating);
-  
-  return {
-    basic: {
-      name: "Basic Restoration",
-      description: "Professional cleaning and protection for immediate aesthetic improvement",
-      features: [
-        "Professional pressure washing of all surfaces",
-        "Spot treatment of oil and organic stains",
-        "Application of high-quality Acrylic Sealer",
-        "Color enhancement and stain resistance",
-      ],
-      price: Math.round(basicPrice * 100) / 100,
-    },
-    recommended: {
-      name: "Recommended Restoration",
-      description: "Complete restoration addressing stability and long-term health of your pavers",
-      features: [
-        "Everything in Basic package",
-        "Full removal of old joint material",
-        "Installation of new Polymeric Sand",
-        "Locks pavers, prevents weeds, stabilizes surface",
-        "Acrylic Sealer for protection",
-      ],
-      price: Math.round(recommendedPrice * 100) / 100,
-    },
-    premium: {
-      name: "Premium Protection",
-      description: "Ultimate protection against harsh elements with minimal future maintenance",
-      features: [
-        "Everything in Recommended package",
-        "Upgrade to Penetrating Siloxane/Silane Sealer",
-        "Superior freeze-thaw protection",
-        "5-7+ year protection lifespan",
-        "Maximum resistance to de-icing salts",
-      ],
-      price: Math.round(premiumPrice * 100) / 100,
-    },
-  };
-}
+import {
+  BASE_RATES,
+  CONDITION_MULTIPLIERS,
+  calculateQuoteTiers,
+  calculatePropertyCleaningTotal,
+} from "./pricing";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Replit Auth middleware
@@ -258,40 +186,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/property-cleaning/calculate", async (req, res) => {
     try {
       const data = propertyCleaningCalculationSchema.parse(req.body);
-      
-      let itemizedTotal = 0;
-      const breakdown = [];
-      
-      // Calculate itemized costs
-      if (data.driveway) {
-        itemizedTotal += cleaningServicePrices.driveway;
-        breakdown.push({ service: "Driveway Cleaning", price: cleaningServicePrices.driveway });
-      }
-      if (data.roof) {
-        itemizedTotal += cleaningServicePrices.roof;
-        breakdown.push({ service: "Roof Cleaning", price: cleaningServicePrices.roof });
-      }
-      if (data.siding) {
-        itemizedTotal += cleaningServicePrices.siding;
-        breakdown.push({ service: "House Siding", price: cleaningServicePrices.siding });
-      }
-      if (data.gutters) {
-        itemizedTotal += cleaningServicePrices.gutters;
-        breakdown.push({ service: "Gutters Cleaning", price: cleaningServicePrices.gutters });
-      }
+
+      const breakdown: { service: string; price: number }[] = [];
+      if (data.driveway) breakdown.push({ service: "Driveway Cleaning", price: cleaningServicePrices.driveway });
+      if (data.roof) breakdown.push({ service: "Roof Cleaning", price: cleaningServicePrices.roof });
+      if (data.siding) breakdown.push({ service: "House Siding", price: cleaningServicePrices.siding });
+      if (data.gutters) breakdown.push({ service: "Gutters Cleaning", price: cleaningServicePrices.gutters });
       if (data.fenceSides > 0) {
-        const fencePrice = data.fencePricePerSide * data.fenceSides;
-        itemizedTotal += fencePrice;
-        breakdown.push({ 
-          service: `Fence Cleaning (${data.fenceSides} ${data.fenceSides === 1 ? 'side' : 'sides'})`, 
-          price: fencePrice 
+        breakdown.push({
+          service: `Fence Cleaning (${data.fenceSides} ${data.fenceSides === 1 ? "side" : "sides"})`,
+          price: data.fencePricePerSide * data.fenceSides,
         });
       }
-      
-      // Apply minimum service charge if needed
-      const minimumApplied = itemizedTotal < cleaningServicePrices.minimumService;
-      const finalTotal = Math.max(itemizedTotal, cleaningServicePrices.minimumService);
-      
+
+      const { itemizedTotal, minimumApplied, finalTotal } = calculatePropertyCleaningTotal(
+        data,
+        cleaningServicePrices
+      );
+
       res.json({
         breakdown,
         itemizedTotal,
@@ -322,19 +234,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const validatedCustomer = customerSchema.parse(customerInfo);
       const validatedServices = propertyCleaningCalculationSchema.parse(services);
-      
-      // Calculate totals
-      let itemizedTotal = 0;
-      if (validatedServices.driveway) itemizedTotal += cleaningServicePrices.driveway;
-      if (validatedServices.roof) itemizedTotal += cleaningServicePrices.roof;
-      if (validatedServices.siding) itemizedTotal += cleaningServicePrices.siding;
-      if (validatedServices.gutters) itemizedTotal += cleaningServicePrices.gutters;
-      if (validatedServices.fenceSides > 0) {
-        itemizedTotal += validatedServices.fencePricePerSide * validatedServices.fenceSides;
-      }
-      
-      const minimumApplied = itemizedTotal < cleaningServicePrices.minimumService;
-      const finalTotal = Math.max(itemizedTotal, cleaningServicePrices.minimumService);
+
+      const { itemizedTotal, minimumApplied, finalTotal } = calculatePropertyCleaningTotal(
+        validatedServices,
+        cleaningServicePrices
+      );
       
       // Create quote
       const quote = await storage.createPropertyCleaningQuote(
