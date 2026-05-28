@@ -97,22 +97,47 @@ const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY)
   : null;
 
+function computeCleaningTotal(services: { driveway?: boolean; roof?: boolean; siding?: boolean; gutters?: boolean; fenceSides?: number; fencePricePerSide?: number }) {
+  let itemizedTotal = 0;
+  if (services.driveway) itemizedTotal += cleaningServicePrices.driveway;
+  if (services.roof) itemizedTotal += cleaningServicePrices.roof;
+  if (services.siding) itemizedTotal += cleaningServicePrices.siding;
+  if (services.gutters) itemizedTotal += cleaningServicePrices.gutters;
+  if ((services.fenceSides ?? 0) > 0) {
+    itemizedTotal += (services.fencePricePerSide ?? 0) * (services.fenceSides ?? 0);
+  }
+  const minimumApplied = itemizedTotal < cleaningServicePrices.minimumService;
+  const finalTotal = Math.max(itemizedTotal, cleaningServicePrices.minimumService);
+  return { itemizedTotal, minimumApplied, finalTotal };
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Replit Auth middleware
   await setupAuth(app);
 
-  // Stripe: create PaymentIntent for checkout
-  app.post("/api/create-payment-intent", async (req, res) => {
+  // Stripe: create PaymentIntent for checkout — amount computed server-side from cart
+  app.post("/api/create-payment-intent", async (req: any, res) => {
     if (!stripe) {
       return res.status(503).json({ error: "Payment processing not configured" });
     }
     try {
-      const { amount } = req.body;
-      if (!amount || typeof amount !== "number" || amount <= 0) {
-        return res.status(400).json({ error: "Invalid amount" });
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      const cartItems = await storage.getCartItems(userId);
+      if (!cartItems || cartItems.length === 0) {
+        return res.status(400).json({ error: "Cart is empty" });
+      }
+      const subtotal = cartItems.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0);
+      const tax = subtotal * 0.095;
+      const shipping = subtotal > 100 ? 0 : 15;
+      const total = subtotal + tax + shipping;
+      if (total <= 0) {
+        return res.status(400).json({ error: "Invalid cart total" });
       }
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), // convert dollars to cents
+        amount: Math.round(total * 100),
         currency: "usd",
         automatic_payment_methods: { enabled: true },
       });
@@ -242,38 +267,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const data = propertyCleaningCalculationSchema.parse(req.body);
       
-      let itemizedTotal = 0;
       const breakdown = [];
-      
-      // Calculate itemized costs
-      if (data.driveway) {
-        itemizedTotal += cleaningServicePrices.driveway;
-        breakdown.push({ service: "Driveway Cleaning", price: cleaningServicePrices.driveway });
-      }
-      if (data.roof) {
-        itemizedTotal += cleaningServicePrices.roof;
-        breakdown.push({ service: "Roof Cleaning", price: cleaningServicePrices.roof });
-      }
-      if (data.siding) {
-        itemizedTotal += cleaningServicePrices.siding;
-        breakdown.push({ service: "House Siding", price: cleaningServicePrices.siding });
-      }
-      if (data.gutters) {
-        itemizedTotal += cleaningServicePrices.gutters;
-        breakdown.push({ service: "Gutters Cleaning", price: cleaningServicePrices.gutters });
-      }
+      if (data.driveway) breakdown.push({ service: "Driveway Cleaning", price: cleaningServicePrices.driveway });
+      if (data.roof) breakdown.push({ service: "Roof Cleaning", price: cleaningServicePrices.roof });
+      if (data.siding) breakdown.push({ service: "House Siding", price: cleaningServicePrices.siding });
+      if (data.gutters) breakdown.push({ service: "Gutters Cleaning", price: cleaningServicePrices.gutters });
       if (data.fenceSides > 0) {
-        const fencePrice = data.fencePricePerSide * data.fenceSides;
-        itemizedTotal += fencePrice;
-        breakdown.push({ 
-          service: `Fence Cleaning (${data.fenceSides} ${data.fenceSides === 1 ? 'side' : 'sides'})`, 
-          price: fencePrice 
+        breakdown.push({
+          service: `Fence Cleaning (${data.fenceSides} ${data.fenceSides === 1 ? 'side' : 'sides'})`,
+          price: data.fencePricePerSide * data.fenceSides,
         });
       }
-      
-      // Apply minimum service charge if needed
-      const minimumApplied = itemizedTotal < cleaningServicePrices.minimumService;
-      const finalTotal = Math.max(itemizedTotal, cleaningServicePrices.minimumService);
+      const { itemizedTotal, minimumApplied, finalTotal } = computeCleaningTotal(data);
       
       res.json({
         breakdown,
@@ -306,18 +311,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedCustomer = customerSchema.parse(customerInfo);
       const validatedServices = propertyCleaningCalculationSchema.parse(services);
       
-      // Calculate totals
-      let itemizedTotal = 0;
-      if (validatedServices.driveway) itemizedTotal += cleaningServicePrices.driveway;
-      if (validatedServices.roof) itemizedTotal += cleaningServicePrices.roof;
-      if (validatedServices.siding) itemizedTotal += cleaningServicePrices.siding;
-      if (validatedServices.gutters) itemizedTotal += cleaningServicePrices.gutters;
-      if (validatedServices.fenceSides > 0) {
-        itemizedTotal += validatedServices.fencePricePerSide * validatedServices.fenceSides;
-      }
-      
-      const minimumApplied = itemizedTotal < cleaningServicePrices.minimumService;
-      const finalTotal = Math.max(itemizedTotal, cleaningServicePrices.minimumService);
+      const { itemizedTotal, minimumApplied, finalTotal } = computeCleaningTotal(validatedServices);
       
       // Create quote
       const quote = await storage.createPropertyCleaningQuote(
@@ -400,17 +394,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!quote) {
           return res.status(404).json({ error: "Property cleaning quote not found" });
         }
-        
+
         const result = await sendPropertyCleaningQuoteEmail(quote, recipientEmail);
-        res.json(result);
+        res.status(result.success ? 200 : 500).json(result);
       } else if (quoteType === "restoration") {
         const quote = await storage.getQuoteRequest(quoteId);
         if (!quote) {
           return res.status(404).json({ error: "Restoration quote not found" });
         }
-        
+
         const result = await sendRestorationQuoteEmail(quote, recipientEmail);
-        res.json(result);
+        res.status(result.success ? 200 : 500).json(result);
       } else {
         res.status(400).json({ error: "Invalid quote type. Must be 'cleaning' or 'restoration'" });
       }
@@ -586,13 +580,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/orders", async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;
-      const { items, ...orderData } = req.body;
-      
+      const { items, stripePaymentIntentId, ...orderData } = req.body;
+
+      if (stripe && stripePaymentIntentId) {
+        const intent = await stripe.paymentIntents.retrieve(stripePaymentIntentId);
+        if (intent.status !== "succeeded") {
+          return res.status(402).json({ error: "Payment not completed" });
+        }
+      }
+
       const order = await storage.createOrder(
-        { ...orderData, userId },
+        { ...orderData, stripePaymentIntentId, userId },
         items
       );
-      
+
       res.json(order);
     } catch (error) {
       res.status(500).json({ error: "Failed to create order" });

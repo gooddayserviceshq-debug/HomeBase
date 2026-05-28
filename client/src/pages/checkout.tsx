@@ -146,6 +146,12 @@ function PaymentForm({
 
     if (paymentIntent?.status === "succeeded") {
       createOrderMutation.mutate({ ...data, paymentIntentId: paymentIntent.id });
+    } else if (paymentIntent?.status === "processing") {
+      toast({ title: "Payment Processing", description: "Your payment is being processed. You'll receive a confirmation shortly." });
+      setProcessing(false);
+    } else {
+      toast({ title: "Payment Incomplete", description: "Payment was not completed. Please try again.", variant: "destructive" });
+      setProcessing(false);
     }
   };
 

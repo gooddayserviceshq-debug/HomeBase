@@ -1,5 +1,6 @@
 import sgMail from "@sendgrid/mail";
 import type { PropertyCleaningQuote, QuoteRequest } from "@shared/schema";
+import { cleaningServicePrices } from "@shared/schema";
 
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || "Blake@gooddaypressurewashing.com";
@@ -62,7 +63,7 @@ async function smsOwner(message: string): Promise<void> {
 
 // ─── Owner alert (email + SMS) ─────────────────────────────────────────────────
 export async function notifyOwner(subject: string, body: string): Promise<void> {
-  await Promise.all([
+  await Promise.allSettled([
     sendEmail({ to: OWNER_EMAIL, subject, text: body }),
     smsOwner(`GDS Alert: ${subject}`),
   ]);
@@ -75,10 +76,10 @@ export function generatePropertyCleaningQuoteEmail(quote: PropertyCleaningQuote)
   text: string;
 } {
   const services: string[] = [];
-  if (quote.driveway) services.push(`Driveway Cleaning — $${quote.driveway ? 350 : 0}`);
-  if (quote.roof) services.push("Roof Cleaning — $425");
-  if (quote.siding) services.push("House Siding — $375");
-  if (quote.gutters) services.push("Gutter Cleaning — $200");
+  if (quote.driveway) services.push(`Driveway Cleaning — $${cleaningServicePrices.driveway}`);
+  if (quote.roof) services.push(`Roof Cleaning — $${cleaningServicePrices.roof}`);
+  if (quote.siding) services.push(`House Siding — $${cleaningServicePrices.siding}`);
+  if (quote.gutters) services.push(`Gutter Cleaning — $${cleaningServicePrices.gutters}`);
   if (quote.fenceSides > 0) {
     services.push(`Fence Cleaning (${quote.fenceSides} sides) — $${Number(quote.fencePricePerSide) * quote.fenceSides}`);
   }

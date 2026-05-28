@@ -283,15 +283,16 @@
         </div>
       </div>
       <div class="contact-form">
+        <form id="contact-form">
         <div class="form-row">
-          <div class="form-group"><label>First Name</label><input type="text" placeholder="Blake"></div>
-          <div class="form-group"><label>Last Name</label><input type="text" placeholder="Smith"></div>
+          <div class="form-group"><label>First Name</label><input id="cf-first" type="text" placeholder="Blake" required></div>
+          <div class="form-group"><label>Last Name</label><input id="cf-last" type="text" placeholder="Smith"></div>
         </div>
-        <div class="form-group"><label>Phone Number</label><input type="tel" placeholder="(615) 390-9779"></div>
-        <div class="form-group"><label>Email Address</label><input type="email" placeholder="you@email.com"></div>
+        <div class="form-group"><label>Phone Number</label><input id="cf-phone" type="tel" placeholder="(615) 390-9779" required></div>
+        <div class="form-group"><label>Email Address</label><input id="cf-email" type="email" placeholder="you@email.com"></div>
         <div class="form-group">
           <label>Service Needed</label>
-          <select>
+          <select id="cf-service">
             <option value="">Select a service…</option>
             <option>Residential Exterior Wash</option>
             <option>Driveway &amp; Sidewalk</option>
@@ -303,9 +304,42 @@
             <option>Other / Multiple</option>
           </select>
         </div>
-        <div class="form-group"><label>Message (optional)</label><textarea placeholder="Tell us a little about your property or what needs cleaning…"></textarea></div>
-        <button class="submit-btn">Send My Request →</button>
+        <div class="form-group"><label>Message (optional)</label><textarea id="cf-message" placeholder="Tell us a little about your property or what needs cleaning…"></textarea></div>
+        <button type="submit" class="submit-btn">Send My Request →</button>
+        <p id="cf-status" style="margin-top:.75rem;text-align:center;font-size:.9rem;display:none"></p>
+        </form>
       </div>
+      <script>
+        document.getElementById('contact-form').addEventListener('submit', async function(e) {
+          e.preventDefault();
+          var btn = this.querySelector('button[type=submit]');
+          var status = document.getElementById('cf-status');
+          btn.disabled = true; btn.textContent = 'Sending…';
+          try {
+            var res = await fetch('/api/contact/inquiries', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: (document.getElementById('cf-first').value + ' ' + document.getElementById('cf-last').value).trim(),
+                phone: document.getElementById('cf-phone').value,
+                email: document.getElementById('cf-email').value || undefined,
+                service: document.getElementById('cf-service').value || undefined,
+                message: document.getElementById('cf-message').value || undefined,
+              })
+            });
+            if (res.ok) {
+              status.style.color = '#10b981'; status.textContent = '✓ Request sent! We\'ll be in touch soon.';
+            } else {
+              status.style.color = '#ef4444'; status.textContent = 'Something went wrong. Call us at (615) 390-9779.';
+              btn.disabled = false; btn.textContent = 'Send My Request →';
+            }
+          } catch(_) {
+            status.style.color = '#ef4444'; status.textContent = 'Network error. Call us at (615) 390-9779.';
+            btn.disabled = false; btn.textContent = 'Send My Request →';
+          }
+          status.style.display = 'block';
+        });
+      </script>
     </div>
   </div>
 </section>
