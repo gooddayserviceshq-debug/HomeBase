@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, decimal, boolean, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, decimal, boolean, jsonb, index, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -451,3 +451,124 @@ export const insertCustomerInquirySchema = createInsertSchema(customerInquiries)
 // Type exports
 export type CustomerInquiry = typeof customerInquiries.$inferSelect;
 export type InsertCustomerInquiry = z.infer<typeof insertCustomerInquirySchema>;
+
+// ── Expense & Tax Tracker ────────────────────────────────────────────────────
+
+export const expenses = pgTable("expenses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  date: timestamp("date").notNull(),
+  category: text("category", { enum: ["fuel", "supplies", "equipment", "insurance", "marketing", "other"] }).notNull(),
+  vendor: text("vendor").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  description: text("description"),
+  mileage: decimal("mileage", { precision: 10, scale: 2 }),
+  taxDeductible: boolean("tax_deductible").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const taxSummaries = pgTable("tax_summaries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  year: integer("year").notNull(),
+  quarter: integer("quarter").notNull(), // 1-4
+  totalRevenue: decimal("total_revenue", { precision: 10, scale: 2 }).notNull().default("0"),
+  totalExpenses: decimal("total_expenses", { precision: 10, scale: 2 }).notNull().default("0"),
+  taxableIncome: decimal("taxable_income", { precision: 10, scale: 2 }).notNull().default("0"),
+  estimatedTax: decimal("estimated_tax", { precision: 10, scale: 2 }).notNull().default("0"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true, createdAt: true });
+export const insertTaxSummarySchema = createInsertSchema(taxSummaries).omit({ id: true, createdAt: true });
+
+export type Expense = typeof expenses.$inferSelect;
+export type InsertExpense = z.infer<typeof insertExpenseSchema>;
+export type TaxSummary = typeof taxSummaries.$inferSelect;
+export type InsertTaxSummary = z.infer<typeof insertTaxSummarySchema>;
+
+// ── Materials & Inventory ────────────────────────────────────────────────────
+
+export const inventoryItems = pgTable("inventory_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  unit: text("unit").notNull(), // gallons, bags, each, etc.
+  quantityOnHand: decimal("quantity_on_hand", { precision: 10, scale: 2 }).notNull().default("0"),
+  reorderPoint: decimal("reorder_point", { precision: 10, scale: 2 }).notNull().default("0"),
+  costPerUnit: decimal("cost_per_unit", { precision: 10, scale: 2 }).notNull().default("0"),
+  vendor: text("vendor"),
+  notes: text("notes"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertInventoryItemSchema = createInsertSchema(inventoryItems).omit({ id: true, updatedAt: true });
+
+export type InventoryItem = typeof inventoryItems.$inferSelect;
+export type InsertInventoryItem = z.infer<typeof insertInventoryItemSchema>;
+
+// ── Hiring Module ─────────────────────────────────────────────────────────────
+
+export const jobPostings = pgTable("job_postings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  payRate: text("pay_rate").notNull(),
+  status: text("status", { enum: ["open", "closed"] }).notNull().default("open"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const jobApplications = pgTable("job_applications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobId: varchar("job_id").references(() => jobPostings.id).notNull(),
+  applicantName: text("applicant_name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone").notNull(),
+  experience: text("experience").notNull(),
+  availability: text("availability").notNull(),
+  status: text("status", { enum: ["new", "reviewed", "interviewed", "hired", "rejected"] }).notNull().default("new"),
+  notes: text("notes"),
+  appliedAt: timestamp("applied_at").defaultNow().notNull(),
+});
+
+export const insertJobPostingSchema = createInsertSchema(jobPostings).omit({ id: true, createdAt: true });
+export const insertJobApplicationSchema = createInsertSchema(jobApplications).omit({ id: true, appliedAt: true });
+
+export type JobPosting = typeof jobPostings.$inferSelect;
+export type InsertJobPosting = z.infer<typeof insertJobPostingSchema>;
+export type JobApplication = typeof jobApplications.$inferSelect;
+export type InsertJobApplication = z.infer<typeof insertJobApplicationSchema>;
+
+// ── Social Media Content Calendar ────────────────────────────────────────────
+
+export const socialPosts = pgTable("social_posts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  platform: text("platform", { enum: ["instagram", "tiktok", "google_business"] }).notNull(),
+  content: text("content").notNull(),
+  mediaUrl: text("media_url"),
+  scheduledAt: timestamp("scheduled_at"),
+  status: text("status", { enum: ["draft", "scheduled", "posted"] }).notNull().default("draft"),
+  hashtags: text("hashtags").array(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertSocialPostSchema = createInsertSchema(socialPosts).omit({ id: true, createdAt: true });
+
+export type SocialPost = typeof socialPosts.$inferSelect;
+export type InsertSocialPost = z.infer<typeof insertSocialPostSchema>;
+
+// ── Google Business Reviews ───────────────────────────────────────────────────
+
+export const gbpReviews = pgTable("gbp_reviews", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  reviewerName: text("reviewer_name").notNull(),
+  rating: integer("rating").notNull(),
+  comment: text("comment"),
+  replied: boolean("replied").notNull().default(false),
+  replyText: text("reply_text"),
+  reviewDate: timestamp("review_date").notNull(),
+  googleReviewId: text("google_review_id").unique(),
+});
+
+export const insertGbpReviewSchema = createInsertSchema(gbpReviews).omit({ id: true });
+
+export type GbpReview = typeof gbpReviews.$inferSelect;
+export type InsertGbpReview = z.infer<typeof insertGbpReviewSchema>;
