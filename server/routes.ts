@@ -1099,8 +1099,12 @@ Follow the platform format requirements exactly. Make each variation feel distin
 
   // Booking system endpoints
   app.get("/api/services", async (req, res) => {
-    const services = await storage.getServices();
-    res.json(services);
+    try {
+      const services = await storage.getServices();
+      res.json(services);
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to fetch services" });
+    }
   });
 
   app.post("/api/quotes", async (req, res) => {
@@ -1176,8 +1180,12 @@ Follow the platform format requirements exactly. Make each variation feel distin
   });
 
   app.get("/api/admin/bookings", async (req, res) => {
-    const bookings = await storage.getBookings();
-    res.json(bookings);
+    try {
+      const bookings = await storage.getBookings();
+      res.json(bookings);
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to fetch bookings" });
+    }
   });
 
   app.patch("/api/admin/bookings/:id/status", async (req, res) => {
