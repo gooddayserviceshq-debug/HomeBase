@@ -11,6 +11,7 @@ import {
   TrendingUp, Users, FileText, BarChart2,
   Zap, Target, RefreshCw, Layers, AlertTriangle,
   RotateCcw, MessageSquare, ChevronUp,
+  Mic, MicOff, Volume2, VolumeX,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -184,6 +185,107 @@ export default function Andromada() {
   const [newStack, setNewStack]           = useState<{platform:StackPlatform;title:string;note:string;status:StackStatus}>({platform:"google-drive",title:"",note:"",status:"active"});
 
   const { data: analytics, refetch: refetchAnalytics } = useQuery<any>({ queryKey:["/api/ceo/analytics"], retry:false });
+
+  // ── Voice state ────────────────────────────────────────────────────────────
+  const [autoSpeak, setAutoSpeak]     = useState(() => localStorage.getItem("andromada-voice") !== "off");
+  const [isSpeaking, setIsSpeaking]   = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const synthRef       = useRef<SpeechSynthesisUtterance | null>(null);
+
+  const stripMarkdown = (text: string) =>
+    text
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/#{1,6}\s/g, "")
+      .replace(/^[-•]\s/gm, "")
+      .replace(/^\d+\.\s/gm, "")
+      .replace(/\n{2,}/g, ". ")
+      .replace(/\n/g, " ")
+      .trim();
+
+  const stopSpeaking = useCallback(() => {
+    window.speechSynthesis?.cancel();
+    setIsSpeaking(false);
+  }, []);
+
+  const speak = useCallback((text: string) => {
+    if (!window.speechSynthesis) return;
+    stopSpeaking();
+    const clean = stripMarkdown(text);
+    if (!clean) return;
+
+    const utterance = new SpeechSynthesisUtterance(clean);
+    const voices = window.speechSynthesis.getVoices();
+
+    // Prefer a natural-sounding female voice
+    const preferred = voices.find(v =>
+      v.name === "Samantha" ||
+      v.name.includes("Google UK English Female") ||
+      v.name.includes("Microsoft Zira") ||
+      v.name.includes("Karen") ||
+      v.name.includes("Moira") ||
+      (v.name.toLowerCase().includes("female") && v.lang.startsWith("en"))
+    ) || voices.find(v => v.lang.startsWith("en")) || voices[0];
+
+    if (preferred) utterance.voice = preferred;
+    utterance.rate  = 0.93;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend   = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    synthRef.current = utterance;
+    window.speechSynthesis.speak(utterance);
+  }, [stopSpeaking]);
+
+  const startListening = useCallback(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { toast({ title: "Microphone not supported", description: "Try Chrome or Safari" }); return; }
+
+    stopSpeaking();
+    const recognition = new SR();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+    recognitionRef.current = recognition;
+
+    recognition.onstart  = () => setIsListening(true);
+    recognition.onend    = () => setIsListening(false);
+    recognition.onerror  = () => setIsListening(false);
+
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results as any[])
+        .map((r: any) => r[0].transcript)
+        .join("");
+      setInput(transcript);
+      if (event.results[event.results.length - 1].isFinal) {
+        setIsListening(false);
+        sendMessage(transcript);
+      }
+    };
+
+    recognition.start();
+  }, [stopSpeaking, toast, sendMessage]);
+
+  const stopListening = useCallback(() => {
+    recognitionRef.current?.stop();
+    setIsListening(false);
+  }, []);
+
+  // Auto-speak when streaming finishes
+  const prevStreamingRef = useRef(false);
+  useEffect(() => {
+    if (prevStreamingRef.current && !isStreaming && autoSpeak && messages.length > 0) {
+      const last = messages[messages.length - 1];
+      if (last.role === "assistant" && last.content) speak(last.content);
+    }
+    prevStreamingRef.current = isStreaming;
+  }, [isStreaming, messages, autoSpeak, speak]);
+
+  useEffect(() => { localStorage.setItem("andromada-voice", autoSpeak ? "on" : "off"); }, [autoSpeak]);
 
   useEffect(() => { chatBottomRef.current?.scrollIntoView({ behavior:"smooth" }); }, [messages]);
   useEffect(() => { localStorage.setItem("andromada-ideas", JSON.stringify(ideas)); }, [ideas]);
@@ -399,7 +501,20 @@ export default function Andromada() {
   // ── Chat input (shared) ────────────────────────────────────────────────────
   const ChatInput = () => (
     <div className="shrink-0 border-t border-violet-900/20 bg-[#09091e]/90 backdrop-blur p-3">
-      {stack.filter(s=>s.status!=="done").slice(0,3).length>0 && (
+      {isSpeaking && (
+        <div className="flex items-center gap-2 mb-2 px-1">
+          <div className="flex gap-0.5 items-end h-4">
+            {[1,2,3,2,1].map((h,i)=>(
+              <div key={i} className="w-0.5 bg-violet-400 rounded-full"
+                style={{ height:`${h*4}px`, animation:`wave-bar ${0.6+i*0.1}s ${i*0.1}s infinite ease-in-out alternate` }} />
+            ))}
+          </div>
+          <span className="text-violet-400 text-xs">Speaking…</span>
+          <button onClick={stopSpeaking} className="text-violet-500 hover:text-violet-300 ml-auto text-xs underline">stop</button>
+          <style>{`@keyframes wave-bar{from{transform:scaleY(0.4)}to{transform:scaleY(1.4)}}`}</style>
+        </div>
+      )}
+      {stack.filter(s=>s.status!=="done").slice(0,3).length>0 && !isSpeaking && (
         <div className="flex gap-1.5 flex-wrap mb-2">
           {stack.filter(s=>s.status!=="done").slice(0,3).map(s=>(
             <span key={s.id} className={`text-[10px] px-2 py-0.5 rounded-full border ${s.status==="stalled"?"bg-amber-900/20 border-amber-800/30 text-amber-400":"bg-violet-900/20 border-violet-800/25 text-violet-400"}`}>
@@ -409,10 +524,25 @@ export default function Andromada() {
         </div>
       )}
       <div className="flex gap-2 items-end">
+        {/* Mic button */}
+        <button
+          onClick={isListening ? stopListening : startListening}
+          disabled={isStreaming || isSpeaking}
+          className={`shrink-0 h-11 w-11 rounded-xl flex items-center justify-center transition-all ${
+            isListening
+              ? "bg-red-600/80 text-white"
+              : "bg-[#0f0f28] border border-violet-800/30 text-violet-500 hover:text-violet-300 hover:border-violet-600/50 disabled:opacity-40"
+          }`}
+          style={isListening ? {animation:"orb-pulse 1s infinite"} : undefined}
+        >
+          {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+        </button>
+
         <Textarea ref={inputRef} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={handleKeyDown}
-          placeholder="Talk to Andromada…" disabled={isStreaming}
+          placeholder={isListening ? "Listening…" : "Talk to Andromada…"} disabled={isStreaming || isListening}
           className="min-h-[44px] max-h-32 resize-none bg-[#0f0f28] border-violet-800/30 text-white placeholder:text-violet-500/35 focus:border-violet-600 rounded-xl text-sm" />
-        <Button onClick={()=>sendMessage(input)} disabled={!input.trim()||isStreaming}
+
+        <Button onClick={()=>sendMessage(input)} disabled={!input.trim()||isStreaming||isListening}
           className="bg-violet-700 hover:bg-violet-600 text-white shrink-0 rounded-xl h-11 px-4">
           <Send className="w-4 h-4" />
         </Button>
@@ -606,7 +736,16 @@ export default function Andromada() {
               : activeCount>0 ? <span className="ml-2 text-violet-500/60 text-xs">· {activeCount} in motion</span> : null}
           </div>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
+          {/* Voice toggle */}
+          <button
+            onClick={() => { if (isSpeaking) stopSpeaking(); setAutoSpeak(p => !p); }}
+            className={`h-7 w-7 rounded-lg flex items-center justify-center transition-all ${autoSpeak ? "text-violet-300 bg-violet-900/30" : "text-violet-600 hover:text-violet-400"}`}
+            title={autoSpeak ? "Voice on — tap to mute" : "Voice off — tap to enable"}
+          >
+            {autoSpeak ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+          </button>
+
           <Button variant="ghost" size="sm" onClick={generateBrief} disabled={briefStreaming}
             className="text-violet-500 hover:text-violet-300 h-7 w-7 p-0">
             <RotateCcw className={`w-3.5 h-3.5 ${briefStreaming?"animate-spin":""}`} />
@@ -615,8 +754,10 @@ export default function Andromada() {
             <Download className="w-3.5 h-3.5" />
           </Button>
           <div className="flex items-center gap-1 ml-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-emerald-400 text-xs font-medium">Live</span>
+            {isSpeaking
+              ? <><div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" /><span className="text-violet-400 text-xs font-medium">Speaking</span></>
+              : <><div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /><span className="text-emerald-400 text-xs font-medium">Live</span></>
+            }
           </div>
         </div>
       </div>
