@@ -18,6 +18,7 @@ import Contact from "@/pages/Contact";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminContracts from "@/pages/admin/contracts";
 import CEODashboard from "@/pages/ceo-dashboard";
+import CFODashboard from "@/pages/cfo-dashboard";
 import Book from "@/pages/book";
 import CustomerDashboard from "@/pages/customer-dashboard";
 import Andromada from "@/pages/andromada";
@@ -40,6 +41,7 @@ function Router() {
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/contracts" component={AdminContracts} />
       <Route path="/ceo-dashboard" component={CEODashboard} />
+      <Route path="/cfo-dashboard" component={CFODashboard} />
       <Route path="/andromada" component={Andromada} />
       <Route component={NotFound} />
     </Switch>
