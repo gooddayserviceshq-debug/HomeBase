@@ -7,6 +7,7 @@ import { sendEmail, sendBookingConfirmationEmail } from "./sendEmail";
 import { createBookingCalendarEvent } from "./calendarService";
 import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
+import { registerTelegramRoutes } from "./telegramBot";
 
 const GDS_SYSTEM_PROMPT = `You are the AI receptionist for Good Day Pressure Washing (GDS), a professional outdoor cleaning and restoration company based in the Murfreesboro, Tennessee area. You are friendly, helpful, and knowledgeable about all GDS services.
 
@@ -2067,6 +2068,8 @@ Blake's email: blakemcconnell1215@gmail.com`;
       res.status(500).json({ message: "Failed to process CFO chat message" });
     }
   });
+
+  registerTelegramRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;
